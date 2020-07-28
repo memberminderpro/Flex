@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="568" height="338" title="Setup" borderColor="#EAF497">
+<mx:Script>
+	<![CDATA[
+	import mx.managers.PopUpManager;
+	import mx.collections.ArrayCollection;
+    import mx.controls.Alert;
+    
+    [Bindable]
+	public var postBack:Function;
+	public var rollBack:Function;
+	[Bindable]
+	private var config:LoadCfg;
+	private var db1File:File = new File;
+	[Bindable]
+	private var filePath:String;
+	private var clubID:int = 0;
+	private function popUpInit():void
+	{
+		PopUpManager.centerPopUp(this);
+		//messageText.invalidateProperties();
+		this.invalidateProperties();
+	}
+	public function setConfig(cfg:LoadCfg):void {
+		config = cfg;
+		destination.text = config.dsn;
+		urlText.text = config.endPoint;
+		clubID = config.clubID;
+		txName.text = config.userNm;
+		txPW.text = config.userPw;
+		filePath = config.DirPath;
+		db1File.nativePath = filePath;
+		rbCustom.selected = config.custom;
+		btnBrowse.visible = rbCustom.selected;
+	}
+	private function onResetClick():void {
+ 		var popReset:popUpConfirm = popUpConfirm(PopUpManager.createPopUp(this, popUpConfirm, true));
+		popReset.title = "Server Settings";
+		popReset.question.text = "Reset Server connection information?\nThis cannot be undone!";
+        popReset.postBack = resetConfig;
+ 	}
+	private function resetConfig():void {
+		config.resetToDefaults();
+		//repopulate GUI
+		setConfig(config);
+	}
+	private function removeDetail():void
+	{
+		PopUpManager.removePopUp(this);
+	}
+	private function confirm():void
+	{	
+		config.dsn = destination.text;
+		config.endPoint = urlText.text;
+		config.clubID = clubID;
+		config.userNm = txName.text;
+		config.userPw = txPW.text;
+		config.DirPath = filePath;
+		config.custom = rbCustom.selected;
+		postBack(config);
+		removeDetail();
+	}
+	private function cancel():void
+	{	
+		if(rollBack != null) {
+			rollBack();
+		}
+		removeDetail();
+	}
+		private function setDirectory():void
+		{
+//			if(rbCustom.selected)		// Set new directory
+//			{
+//				db1File.addEventListener(Event.SELECT, newDirectory);
+//				db1File.browseForDirectory("Select a directory");
+//			}
+//			else
+//			{
+//				db1File = File.documentsDirectory;
+//				FilePath = db1File.nativePath;
+//				dirSelected();
+//			}
+//			checkValue();	// Save Button
+		}
+		private function newDirectory(e:Event):void {
+			db1File.nativePath = e.target.nativePath;
+			filePath = db1File.nativePath;
+		}
+		private function browseForDir():void {
+			db1File.addEventListener(Event.SELECT, newDirectory);
+			db1File.browseForDirectory("Select a directory for DataFile");
+		}
+		
+		/*
+			Called from all input fields
+			Simple length check
+		*/
+		private function checkValue():void
+		{
+			if(btnSaveCfg != null)
+			{
+				btnSaveCfg.enabled = false;
+				if(txName.length > 0 && txPW.length > 0 &&
+				 	urlText.length > 0 && destination.length > 0)
+				{
+					btnSaveCfg.enabled = true;
+				}
+			}
+		}
+		private function locationType():void {
+			btnBrowse.visible = rbCustom.selected;
+			if(!rbCustom.selected) {
+				//default to user's document dir
+				db1File = File.documentsDirectory;
+				filePath = db1File.nativePath;
+				//dirSelected();
+			}
+		}
+	]]>
+</mx:Script>
+	<mx:Canvas label="Setup" width="546" height="295" borderStyle="none" borderColor="#0B2494" id="canvas1" y="-1">
+			<mx:TextInput x="100" y="12" id="urlText" maxChars="50" editable="true" 
+				width="245.5" text="" valueCommit="checkValue()" change="checkValue()"/>
+			<mx:Label x="10" y="12" text="URL"/>
+			<mx:Label x="10" y="42" text="Destination"/>
+			<mx:TextInput x="100" y="42" id="destination" maxChars="20" editable="true" 
+				width="160" text="" valueCommit="checkValue()" change="checkValue()"/>
+			<mx:Label x="10" y="92" text="User Name"/>
+			<mx:TextInput x="100" y="92" id="txName" editable="true" 
+				maxChars="50" width="245.5"  
+				valueCommit="checkValue()" change="checkValue()"/>
+			<mx:Label x="10" y="122" text="Password"/>
+			<mx:TextInput x="100" y="122" width="160" id="txPW" displayAsPassword="true" maxChars="20" text="" 
+				valueCommit="checkValue()" change="checkValue()"/>
+			<mx:Button x="207.5" y="255" label="Save" id="btnSaveCfg" enabled="false" click="confirm()" width="68"/>
+			<mx:TextInput editable="false" x="100" y="205" id="txPath" width="344"  text="{filePath}"/>
+			<mx:Label x="10" y="207" text="Data File @ " fontSize="10"/>
+			<!--mx:RadioButton x="100" y="184" label="Default" groupName="rgCustom" id="rbDefault" click="setDirectory()" selected="{config.custom == 1}"/-->
+			<mx:CheckBox x="100" y="174" label="Custom Location" id="rbCustom" click="locationType()"/>
+			<mx:Button x="283.5" y="255" label="Cancel" click="cancel()"/>
+			<mx:Button x="452" y="203" label="Browse..." id="btnBrowse" click="browseForDir()"/>
+			<mx:Button x="460.8" y="10" label="Reset" click="onResetClick()">
+					<mx:icon>@Embed(source='assets/arrow_undo.png')</mx:icon>
+			</mx:Button>
+		</mx:Canvas>
+</mx:TitleWindow>

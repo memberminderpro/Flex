@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:controls="com.flexicious.controls.*"
+	title="Preferences" alpha="1.0" borderColor="#A8E6E7" borderAlpha="1.0">
+<mx:Script>
+	<![CDATA[
+		import com.flexicious.export.exporters.TxtExporter;
+		import mx.managers.PopUpManager;
+		import mx.collections.ArrayCollection;
+		import com.flexicious.utils.UIUtils;
+		import com.flexicious.grids.dependencies.IExtendedDataGrid;
+		[Bindable()]
+		public var _grid:IExtendedDataGrid;
+		[Bindable()]
+		private var _filterVisible:Boolean;
+		[Bindable()]
+		private var _pageSize:int;
+		[Bindable()]
+		private var _enablePaging:Boolean;
+		[Bindable()]
+		private var _enableFooters:Boolean;
+		[Bindable()]
+		private var _enableFilters:Boolean;
+		
+		[Bindable()]
+		private var _footerVisible:Boolean;
+		public function get grid():IExtendedDataGrid
+		{
+			return _grid;
+		}
+		public function set grid(val:IExtendedDataGrid):void
+		{
+			_grid=val;
+			var visibleCols:ArrayCollection=new ArrayCollection();
+			for each(var col:Object in _grid.columns)
+			{
+				if(col.visible)
+					visibleCols.addItem(col);
+			}
+			cbxColumns.dataProvider = new ArrayCollection(_grid.columns); 
+			cbxColumns.validateNow();
+			if(_grid.columns.length!= visibleCols.length)
+				cbxColumns.selectedItems=visibleCols.source;//other wise let it pick ALL by default
+			_filterVisible=grid.filterVisible;
+			_footerVisible=grid.footerVisible;
+			_pageSize=grid.pageSize;
+			_enablePaging=grid.enablePaging;
+			_enableFilters=grid.enableFilters;
+			_enableFooters=grid.enableFooters;
+		}
+		private function onOk():void
+		{
+			var collection:ArrayCollection = new ArrayCollection(cbxColumns.selectedItems);
+			for each(var col:Object in _grid.columns)
+			{
+				col.visible=collection.contains(col) || cbxColumns.isAllSelected;
+			}
+			grid.refreshLayout();
+			grid.filterVisible=cbFilters.selected;
+			grid.footerVisible=cbFooter.selected;
+			grid.pageSize= parseInt(txtPageSize.text);
+			UIUtils.removePopUp(this);
+		}
+	]]>
+</mx:Script>
+<mx:HBox>
+	<mx:VBox>
+		<mx:Label text="Columns To Show:"/>
+		<controls:CheckBoxList id="cbxColumns" allowMultipleSelection="true" width="200" height="175" 
+			addAllItem="true" 
+			labelField="headerText" dataField="headerText" />
+	</mx:VBox>
+	<mx:VBox>
+		<mx:CheckBox id="cbFooter" label="Show Footers" selected="{_footerVisible}" visible="{_enableFooters}"/>
+		<mx:CheckBox id="cbFilters" label="Show Filter" selected="{_filterVisible}" visible="{_enableFilters}"/>	
+		<mx:HBox visible="{_enablePaging}">
+			<mx:Label text="Records Per Page:"/>
+			<mx:TextInput id="txtPageSize" text="{_pageSize}" width="40"/>
+		</mx:HBox>
+			
+	</mx:VBox>
+</mx:HBox>
+	
+	<mx:ControlBar horizontalAlign="right">
+		<mx:Button label="Ok" click="onOk()"/>
+		<mx:Button label="Cancel" click="PopUpManager.removePopUp(this);"/>
+	</mx:ControlBar>
+
+</mx:TitleWindow>

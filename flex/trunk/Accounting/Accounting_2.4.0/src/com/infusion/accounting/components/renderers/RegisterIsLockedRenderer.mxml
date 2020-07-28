@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox implements="mx.controls.listClasses.IDropInListItemRenderer" 
+	horizontalAlign="center" xmlns:mx="http://www.adobe.com/2006/mxml" >
+<mx:Script>
+<![CDATA[
+	import com.infusion.accounting.utils.CommonStrings;
+	import mx.controls.dataGridClasses.DataGridListData;
+	import mx.controls.listClasses.BaseListData;
+	import mx.controls.Image;
+
+	private var _data:Object;
+	[Bindable] private var isLocked:Boolean = false;
+
+	// Internal variable for the property value.
+	private var _listData:BaseListData;
+
+      [Bindable]
+      [Embed(source="../assets/images/lock.png")]
+      private var LockedIcon:Class; 
+
+	// Define the getter method.
+	public function get listData():BaseListData
+	{
+		return _listData;
+	}
+
+	// Define the setter method,
+	public function set listData(value:BaseListData):void
+	{
+		_listData = value;
+	}
+
+	override public function set data(value:Object):void {
+
+		_data = value;
+
+
+	if (_data[DataGridListData(listData).dataField] == true) //i.e. is Locked
+	{
+		isLocked = true;
+		this.toolTip = "";
+	} else { //not locked, so don't show icon
+		isLocked = false;
+		this.toolTip = "Double-click to edit Record";
+	}
+}
+
+	override public function get data( ):Object {
+	return _data;
+	}
+
+]]>
+
+</mx:Script>
+<mx:Image id="theIcon" source="{LockedIcon}" visible="{isLocked}" toolTip="{CommonStrings.notEditableMessage}"/>
+</mx:HBox>

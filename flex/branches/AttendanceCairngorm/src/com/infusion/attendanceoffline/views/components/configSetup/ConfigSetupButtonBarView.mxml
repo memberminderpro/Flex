@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ConfigSetupButtonBar 
+	xmlns="com.infusion.attendanceoffline.views.components.configSetup.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%">
+	<mx:Button label="Save" click="handleSave()"/>
+	<mx:Button label="Cancel" click="handleCancel()"/>
+	<mx:Button x="460.8" y="10" label="Reset" click="handleReset()">
+		<mx:icon>@Embed(source='assets/arrow_undo.png')</mx:icon>
+	</mx:Button>
+	
+</ConfigSetupButtonBar>

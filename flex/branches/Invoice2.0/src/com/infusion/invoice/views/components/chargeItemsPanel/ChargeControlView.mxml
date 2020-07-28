@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ChargeControlComponent xmlns="com.infusion.invoice.views.components.chargeItemsPanel.*" 
+	borderStyle="inset" backgroundColor="#F9ECC4" borderColor="#888888"
+	xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" currentState="SelectChargeType">
+	<states>
+		<mx:State name="SelectChargeType">
+			<mx:RemoveChild target="{chargeTypeLabel}"/>
+		</mx:State>
+		<mx:State name="ReadOnly">
+			<mx:RemoveChild target="{cbChargeType}"/>
+		</mx:State>
+	</states>
+	<mx:Label text="Charge Type:" fontWeight="bold" x="10" y="10"/>
+	<mx:ComboBox id="cbChargeType" dataProvider="{chargeTypesList}"
+		labelField="ChargeType" width="230" fontSize="10"  enabled="false"
+		change="CTchange(event)" fontWeight="bold" x="97" y="8"/>
+	<mx:Label id="chargeTypeLabel" visible="true" text="{selectedChargeType}" width="243" x="97" y="10"/>
+		
+	<mx:Button id="btnSaveCharge" click="saveChgItem()" 
+		enabled="false" fillAlphas="[1.0, 1.0]" fillColors="[#FBCD2E, #FBCD2E]"
+		label="Save" width="70" x="393" y="8"/>
+	<mx:Button  id="btnCancel" click="cancelCharge()" width="70" label="Cancel" x="471" y="8"/>
+</ChargeControlComponent>

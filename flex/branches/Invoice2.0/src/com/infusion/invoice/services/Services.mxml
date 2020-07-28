@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<cairngorm:ServiceLocator
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	xmlns:cairngorm="http://www.adobe.com/2006/cairngorm"
+	xmlns:dtos="com.infusion.invoice.model.dtos.*">
+	<!--
+		public var dsn:String = "Rotary";
+		public var _endpoint:String = "http://76.12.191.145//flex2gateway"
+		
+			remoteCFC.source = dsn + ".CFC.InvoiceGrpDAO";
+			chargeTypeCFC.source = dsn + ".CFC.ChargeTypeDAO" ;
+			chargeItemCFC.source = dsn + ".CFC.ChargeItemDAO";
+			accountCFC.source = dsn + ".CFC.GL_AccountDAO";
+			memberCFC.source = dsn + ".CFC.GL_AccountDAO";
+			memberType.source = dsn + ".CFC.MemberTypeDAO";
+			invoiceCFC.source = dsn + ".CFC.InvoiceDAO";
+			invoiceItemCFC.source = dsn + ".CFC.InvoiceItemDAO";
+			
+			//chargeitem
+			_chargeMemberType.source = _dsn + ".CFC.ChargeMemberTypeDAO";
+			_memberRecurring.source = _dsn + ".CFC.ChargeMemberRecurringDAO";
+			_memberSelected.source = _dsn + ".CFC.ChargeMemberSelectedDAO";
+			
+			//Chargegroup
+			_chargeItemQty.source = _dsn + ".CFC.ChargeItemDAO";
+			
+			//chargepanel
+			periodDate.source = _dsn + ".CFC.DateDAO";
+			periodDate.GetPeriodDates();
+			memberRecurring.source = _dsn + ".CFC.ChargeMemberRecurringDAO"; 
+			memberSelected.source = _dsn + ".CFC.ChargeMemberSelectedDAO"; 
+			mealCode.source = _dsn + ".CFC.MealCodeDAO";
+			mealCode.Pick();
+	-->
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.rpc.events.FaultEvent;
+		private function remoteError(e:FaultEvent):void
+ 		{
+ 			Alert.show(e.fault.faultString, "Server Error");	
+ 		}
+		]]>
+	</mx:Script>
+	
+	<!-- Injected from outside -
+	  public var destination:String = "Rotary";
+      public var endPoint:String = "http://76.12.191.145/flex2gateway"
+      -->
+	<mx:String id="destination">Rotary</mx:String>
+	<mx:String id="endpoint">http://www.directory-online.com/flex2gateway</mx:String>
+
+    <mx:RemoteObject
+    	id="remoteCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.InvoiceGrpDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="chargeTypeCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.ChargeTypeDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="chargeItemCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.ChargeItemDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="accountCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.GL_AccountDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="memberTypeCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.MemberTypeDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="invoiceCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.InvoiceDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="invoiceItemCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.InvoiceItemDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="chargeMemberType" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.ChargeMemberTypeDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="memberRecurring" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.ChargeMemberRecurringDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="memberSelected" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.ChargeMemberSelectedDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="chargeItemQty" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.ChargeItemDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="periodDate" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.DateDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="mealCode" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{destination+'.CFC.MealCodeDAO'}"
+    	endpoint="{endpoint}"
+    	/>
+    <mx:RemoteObject
+    	id="clubMeetingRO" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="Rotary.CFC.ClubMeetingFLEX"
+    	endpoint="http://www.directory-online.com/flex2gateway"
+    	
+    	/>
+  
+
+</cairngorm:ServiceLocator>
+

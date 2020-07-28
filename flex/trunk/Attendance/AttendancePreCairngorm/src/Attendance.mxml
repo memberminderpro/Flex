@@ -1,0 +1,1941 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml"  
+	 creationComplete="initApp()" width="814" height="788" layout="absolute" close="shutdownHook()"
+>
+	<mx:RemoteObject
+    	id="clubAttendance" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="clubAttendanceHandler(event)"
+    	fault="remoteError(event)"/>
+    <mx:RemoteObject
+    	id="clubMeeting" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="clubMeetingHandler(event)"
+    	fault="remoteError(event)"/>
+    <mx:DateFormatter id="dateFormat" formatString="MMM DD, YYYY"/>
+    <mx:DateFormatter id="dtFormat" formatString = "MM/DD/YYYY LL:NN:SS"/>
+    <mx:ArrayCollection id="mealCodes"/>
+    
+    <mx:TraceTarget level="0" includeDate="true" includeTime="true" includeCategory="true" includeLevel="true">
+        <mx:filters>
+            <mx:Array>
+                <mx:String>*</mx:String>
+            </mx:Array>
+        </mx:filters>
+    </mx:TraceTarget>
+
+    
+	<mx:Script>
+		<![CDATA[
+		import flash.trace.Trace;
+		import mx.controls.Menu;
+		import classes.AttdRenderer;
+		import mx.logging.targets.TraceTarget;
+		import classes.LoadCfg;
+		import mx.events.DataGridEvent;
+		import classes.notesSz;
+		import mx.events.IndexChangedEvent;
+		import classes.Members;
+		import mx.collections.ArrayCollection;
+		import mx.rpc.events.FaultEvent;
+		import mx.rpc.events.ResultEvent;
+		import mx.rpc.AsyncToken;
+		//import mx.rpc.remoting.mxml.RemoteObject;
+		import mx.messaging.messages.RemotingMessage;
+		import mx.controls.Alert;
+		import flash.events.*;
+		import flash.data.SQLConnection;
+		import flash.events.SQLErrorEvent;
+		import flash.events.SQLEvent;
+		import flash.filesystem.File;
+		import mx.managers.CursorManager;
+		import com.adobe.serialization.json.JSON;
+		import classes.NameLabelRenderer;
+		import classes.MenuCodeComboBox;
+		import classes.*;
+		import mx.logging.* 
+		import mx.managers.PopUpManager;
+		import mx.events.CloseEvent;
+		import mx.printing.*;
+        import mx.utils.ObjectUtil;
+
+		
+		// Sounds
+		[Embed(source = "assets/Ding.mp3")]
+		private var dingClass:Class;
+		[Embed(source = "assets/DEEP_BOU.mp3")]
+		private var deepClass:Class; 
+		private var dsnDefault:String = "Rotary";
+		private var epDefault:String = "http://www.directory-online.com";
+		//public var dsn:String = "dacdb";
+		[Bindable]
+		public var dsn:String;
+		public var district:int = 7710;
+		public var clubID:int = 6128;
+		private var notesEdit:Boolean = false;
+		private var clubMeetingID:int = 0;
+		private var modeOnLine:Boolean = false;
+		private var traceTarget:TraceTarget = new TraceTarget();
+		private var log:LogLogger = new LogLogger("Attendance");
+		private var menuCodeEditor:MenuCodeComboBox = new MenuCodeComboBox();
+		
+		//public var endPoint:String = "http://76.12.226.19";
+		[Bindable]
+		public var endPoint:String;
+//		[Bindable]
+//		public var userNm:String;
+//		[Bindable]
+//		public var userPw:String;
+		[Bindable]
+		private var selMeetingDate:String;		// Currently selected date
+		[Bindable]
+		private var selMeetingNm:String;		// Currently selected meeting name
+		[Bindable]
+		public var arLocal:Array = new Array();
+		[Bindable] 
+		public var acMembers:ArrayCollection = new ArrayCollection; //Members data grid
+		[Bindable]
+		public var mcLabelText:String;
+		[Bindable]
+		public var sqlConn:SQLConnection;
+		[Bindable]
+		private var attdPercent:String;		
+		[Bindable]
+		private var attdTotal:String;		
+		[Bindable]
+		private var attdCount:String;		
+		private var networked:Boolean = false;
+		private var timer:Timer;
+		private var checkNetworkInterval:int = 5*60*1000; //5 mins in milliseconds 
+		private var headRequest:URLRequest = new URLRequest();
+		private var connectTest:URLLoader = null;
+		
+		private var closedList:ArrayCollection = new ArrayCollection();
+		
+		var popUp:popUpAddGuest;
+		var popUpStats:StatsPopup;
+		var popSetup:SetupPopup;
+		// SQL statements
+		private var selectStmt:SQLStatement = new SQLStatement();
+		private var memberStmt:SQLStatement = new SQLStatement();
+		private var selectAllStmt:SQLStatement = new SQLStatement();
+		private var selectNoneStmt:SQLStatement = new SQLStatement();
+		private var CreateMemberStmt:SQLStatement = new SQLStatement();
+		private var CreateMeetingStmt:SQLStatement = new SQLStatement();
+		
+		
+		private var sqlMember:String = 
+			"CREATE TABLE IF NOT EXISTS members (" + 
+			" Idx INTEGER PRIMARY KEY AUTOINCREMENT, " +
+			" UserID INTEGER, " +
+			" UserName TEXT(50), " +
+			" Attended TEXT, " +
+			" MemberID INTEGER, " +
+			" MemberTypeID INTEGER, " +
+			" ClubAttendanceID INTEGER, " +
+			" ClubMeetingID INTEGER, " +
+			" MemberType TEXT(50), " +
+			" Notes TEXT(50), " +
+			" Counts INTEGER, " +
+			" Makeup INTEGER, " +
+			" Excused INTEGER, " +
+			" Rof85 INTEGER, " +
+			" MealCode INTEGER DEFAULT 0, " +
+			" GuestCode INTEGER, " +
+			" Date TEXT(30) )" 
+		private var sqlMeeting:String = 
+			"CREATE TABLE IF NOT EXISTS	meeting (" +
+			" ClubMeetingID PRIMARY KEY, " +
+			" Attended INTEGER, " +
+			" Exempt INTEGER, " +
+			" MakeUp INTEGER, " +
+			" ClubID INTEGER, " +
+			" Total INTEGER, " +
+			" ClubMeeting TEXT, " +
+			" ClubName TEXT, " +
+			" IsOpen TEXT, " +
+			" MeetingDate TEXT, " +
+			" LastSaved TEXT, " +
+			" LastModified TEXT, " +
+			" Dirty INTEGER );"; 	// Local Value 
+		
+		[Bindable]
+//		private var FilePath:String;
+		private var db1File:File = new File;
+		private var once:Boolean = false;
+		private var config:LoadCfg;
+		private var mealCodesDB:AttendanceDB;
+			
+		private function initApp():void
+		{
+			traceTarget.level = LogEventLevel.ALL;
+			Log.addTarget(this.traceTarget);
+			currentState = "offline";
+			
+			//disable until meeting loaded
+			//TODO decide if this should be part of base state
+			enableMeetingPanel(false);
+			
+			config = new LoadCfg();
+			config.addEventListener(Event.OPEN, cfgCreated);
+			config.addEventListener(Event.COMPLETE, cfgSaved);
+			config.addEventListener(Event.CHANGE, cfgUpdated);
+			config.addEventListener(Event.CONNECT, cfgDataAvail);
+			//TODO decide if needed: navTab.addEventListener(IndexChangedEvent.CHANGE, tabScanFocus);
+			//attendTab.addEventListener(MouseEvent.CLICK, mouseScanFocus);
+			pgLoad.visible = false;
+			mealCodesDB = new AttendanceDB();
+			
+			//initNetworking();   //moved to cfgCreated
+			
+		}
+		
+		private function enableMeetingPanel(enable:Boolean):void {
+			btnAddGuest.enabled = enable;
+			btnAll.enabled = enable;
+			btnClear.enabled = enable;
+			attd1.enabled = enable;
+			attd2.enabled = enable;
+			attd3.enabled = enable;
+//			if(!enable) {
+//				attd1.text = "";
+//				attd2.text = "";
+//				attd3.text = "";
+//			}
+			
+			attdLabel.enabled = enable;
+			attdOf.enabled = enable;
+			btnStats.enabled = enable;
+			//MeetingPanel.validateNow();
+		}
+		
+		private function shutdownHook():void {
+			config.shutdownHook();
+			mealCodesDB.shutdownHook();
+			if(sqlConn != null) sqlConn.close(); 
+			
+		}
+		private function cfgCreated(e:Event):void
+		{
+			config.CreateTable();
+			initNetworking();
+		}
+		private function cfgDataAvail(e:Event):void
+		{
+			//No directory path set
+			if(config.DirPath == null)
+			{
+				db1File = File.documentsDirectory;
+				config.DirPath = db1File.nativePath;
+			}
+			if(config.DataFlag == false)
+			{
+				Message.text = "Setup Required";
+				//navTab.selectedIndex = 3;
+			}
+			else
+			{
+//				userNm = config.userNm;
+//				userPw = config.userPw;
+				endPoint = config.endPoint;
+				clubID = config.clubID;
+				dsn = config.dsn;
+			}
+			checkNetworkConnection();
+			dirSelected();
+		}
+		private function cfgSaved(e:Event):void
+		{
+			Message.text = "Setup Saved";
+			checkNetworkConnection();
+		}
+		private function cfgUpdated(e:Event):void
+		{
+			Message.text = "Setup Updated";
+			checkNetworkConnection();
+			sqlLogin();
+		}
+		private function setSQLStatements():void
+		{
+			// Create Meeting Table
+			CreateMeetingStmt.sqlConnection = sqlConn;
+			CreateMeetingStmt.text = sqlMeeting;
+			CreateMeetingStmt.addEventListener(SQLEvent.RESULT, createMeetingResult);
+			CreateMeetingStmt.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			// Create Member Table
+			CreateMemberStmt.sqlConnection = sqlConn;
+			CreateMemberStmt.text = sqlMember;
+			CreateMemberStmt.addEventListener(SQLEvent.RESULT, createResult);
+			CreateMemberStmt.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			// Set up member statements
+			memberStmt.sqlConnection = sqlConn;
+			memberStmt.addEventListener(SQLEvent.RESULT, memberResult);
+			memberStmt.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			// Set up Select from meetin
+			selectStmt.sqlConnection = sqlConn;
+			selectStmt.text = "SELECT * FROM meeting ";		// Get all
+			selectStmt.addEventListener(SQLEvent.RESULT, selectResult);
+			selectStmt.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			// Set up Select All
+			selectAllStmt.sqlConnection = sqlConn;
+			selectAllStmt.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			selectAllStmt.addEventListener(SQLEvent.RESULT, selectBulkResult);
+			// Set up Select None
+			selectNoneStmt.sqlConnection = sqlConn;
+			selectNoneStmt.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			selectNoneStmt.addEventListener(SQLEvent.RESULT, selectBulkResult);	
+		}
+		// Open database
+		private function dirSelected():void
+		{
+			sqlConn = new SQLConnection();
+			sqlConn.addEventListener(SQLEvent.OPEN, initHandler);
+			sqlConn.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			db1File.nativePath = config.DirPath;
+			db1File = db1File.resolvePath("attendance.db");
+			if(sqlConn.connected) sqlConn.close();
+			//Alert.show("Opened new database at: "+db1File.nativePath);
+			sqlConn.openAsync(db1File);
+			// Connection is open...
+			function initHandler(e:SQLEvent):void
+			{
+				setSQLStatements();
+				clubAttendance.endpoint = config.endPoint + "/flex2gateway";
+				clubMeeting.endpoint = config.endPoint + "/flex2gateway";
+				clubAttendance.source = config.dsn + ".CFC.ClubAttendanceFLEX";
+				clubMeeting.source = config.dsn + ".CFC.ClubMeetingFLEX";
+				//btnLoad.enabled = true;
+				// Create Members
+				CreateMemberStmt.execute();
+				// Create Meeting
+				CreateMeetingStmt.execute();
+				//Load from Local
+				//loadDB(); -- done automatically when create Meeting fires
+			}
+		}
+		
+		private function newDirectory(newDirPath:String):void
+		{	
+			sqlConn.close();			// Close current
+			db1File.nativePath = newDirPath;
+			dirSelected();
+		} 
+		private function initTab():void
+		{
+			scan.addEventListener(KeyboardEvent.KEY_UP, scanIn);
+			scan.setFocus();
+			dgMembers.addEventListener(MouseEvent.RIGHT_CLICK, focusScan2);
+		}
+		public function focusScan():void {
+			scan.setFocus();
+			scan.setStyle("borderColor", "#0D8104");
+		}
+		public function focusScan2(e:Event):void {
+			scan.setFocus();
+			scan.setStyle("borderColor", "#0D8104");
+		}
+		/**  Internet Connectivity **/
+		private function initNetworking():void {
+ 			NativeApplication.nativeApplication.addEventListener(Event.NETWORK_CHANGE, checkNetworkConnection);
+ 			timer = new Timer(checkNetworkInterval); //5 mins default
+            timer.addEventListener("networkchecktimer", checkNetworkConnection);
+            timer.start();
+            
+            //checkNetworkConnection();
+		}
+		
+		/**
+		 * Will attempt open a connection to the dacdb server
+		 */
+		private function checkNetworkConnection(event:Event=null):void{
+			headRequest.method = "HEAD";
+ 			headRequest.url = config.endPoint+"/"+config.dsn; 
+ 			//first clean up old one
+ 			if(connectTest != null) {
+ 				connectTest.removeEventListener(HTTPStatusEvent.HTTP_STATUS, connectHttpStatusHandler);
+ 				connectTest.removeEventListener(Event.COMPLETE, connectCompleteHandler);
+ 				connectTest.removeEventListener(IOErrorEvent.IO_ERROR, connectErrorHandler); 
+ 			}
+ 			connectTest = new URLLoader(headRequest);
+ 			connectTest.addEventListener(HTTPStatusEvent.HTTP_STATUS, connectHttpStatusHandler);
+ 			connectTest.addEventListener(Event.COMPLETE, connectCompleteHandler);
+ 			connectTest.addEventListener(IOErrorEvent.IO_ERROR, connectErrorHandler); 
+		}
+
+		private function connectHttpStatusHandler(event:*=null):void{
+ 			if (event.status == "0" ? setNetworked(false):setNetworked(true));
+ 			
+		}
+		private function connectErrorHandler(event:IOErrorEvent):void{
+ 			setNetworked(false);
+		}
+		private function connectCompleteHandler(event:Event):void{
+		 	setNetworked(true);
+		}
+		private function setNetworked(connected:Boolean):void {
+			networked = connected;
+			if(connected) {
+ 				currentState = "online";
+ 			} else {
+ 				currentState = "offline";
+ 			}
+ 			
+ 			//trace(networked);
+		}
+
+//		private function login():void
+//		{
+//			var args:Object = {LoginName:"", Password:""};
+//			
+//			args.LoginName = config.userNm;
+//			args.Password = config.userPw;
+//			clubMeeting.Login(args);
+//		}
+		
+		private function mouseScanFocus(e:Event):void
+		{
+			if(scan != null)
+			{
+				scan.setFocus();
+			}
+		}
+		
+		private function saveCFG(updatedConfig:LoadCfg):void
+		{
+//			config.dsn = destination.text;
+//			config.endPoint = urlText.text;
+//			config.clubID = clubID;
+//			config.userNm = txName.text;
+//			config.userPw = txPW.text;; 
+//			config.DirPath = FilePath;
+//			btnLoad.enabled = true;
+			if(config.DirPath != updatedConfig.DirPath) {
+				updatedConfig.clubID = config.clubID;
+				config = updatedConfig;
+				config.UpdateCfg();
+				
+			} else { //full save.  TODO move DB?
+				config = updatedConfig;
+				config.SaveCFG();
+			}
+			newDirectory(config.DirPath);
+			
+			
+		}
+		private function createResult(e:SQLEvent):void
+		{
+			//Message.text = "";
+		}
+		private function createMeetingResult(e:SQLEvent):void
+		{
+			//Message.text = "";
+			loadDB();
+		}
+		private function errorHandler(e:SQLErrorEvent):void
+		{
+			Message.text = e.error.message;
+			CursorManager.removeBusyCursor();
+			Alert.show(e.toString());
+			log.error(e.error.getStackTrace());
+		}	
+		
+		/*
+			Load from local database
+		*/
+		private function loadDB():void
+		{
+			CursorManager.setBusyCursor();
+			selectStmt.execute();
+			mealCodes = mealCodesDB.getMealCodes();
+			mealCodes.enableAutoUpdate();
+			menuCodeEditor.bindMealCodes(mealCodes);
+		}
+		
+		/** After select * from meeting; (localdb) **/
+		private function selectResult(e:SQLEvent):void
+		{
+			var result:SQLResult = selectStmt.getResult();
+			var resultLen:int;
+			var i:int;
+			var m:Members;
+			var row:Object;
+			
+			CursorManager.removeBusyCursor();
+			
+			if(result.data == null)
+			{
+				Message.text = "No Local Data Available. Sync with server.";
+				arLocal = new Array();
+				dgLocal.dataProvider = arLocal;
+				dgLocal.invalidateList();
+				if(dgMembers != null)
+				{
+					acMembers = new ArrayCollection();
+					dgMembers.dataProvider = acMembers;
+					dgMembers.invalidateList();
+				}
+				checkNetworkConnection();
+				btnLoad.enabled = true;
+			}
+			else
+			{
+				//Message.text = "";
+				arLocal = result.data;
+				dgLocal.dataProvider = arLocal;
+				dgLocal.invalidateList();
+
+			}
+		}
+		
+		//from clubMeeting.Login
+		private function clubMeetingHandler(e:ResultEvent):void
+		{
+			var i:int, len:int;
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		var id:int;		// Club ID returned from login
+    		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		if(msgOp == "Lookup") // Contains all meetings for the club
+    		{
+				lookupMeetingHandler(e.result as ArrayCollection);
+				loadDB();			// Load to local;
+				
+				//Message.text = "";
+			}
+			if(msgOp == "Login") 	// Returns with Club ID
+			{
+				clubID = e.result as int;
+				modeOnLine = true;
+				if(clubID > 0)
+				{
+					Message.text = "Finding club "+clubID+"...";
+					config.clubID = clubID;
+					config.UpdateCfg();
+					clubMeeting.MealCode(clubID);
+				}
+				else
+				{
+					Message.text = "Login failed...";
+				}
+			}
+			if(msgOp == "MealCode")
+			{
+				var mcArray:ArrayCollection = e.result as ArrayCollection;
+				if(mcArray != null && mcArray.length > 0) {
+					mealCodesDB.clearMealCodes();
+					for(i=0; i<mcArray.length; i++) {
+						mealCodesDB.addMealCode(mcArray[i].MealCode, mcArray[i].MealCodeID);
+					}
+				}
+				mealCodes = mealCodesDB.getMealCodes();
+				mealCodes.enableAutoUpdate();
+				menuCodeEditor.bindMealCodes(mealCodes);
+			} else if(msgOp == "View") {
+				//got single meeting "refresh dirty" from server
+				var viewArray:ArrayCollection = e.result as ArrayCollection;
+				if(viewArray != null && viewArray.length == 1) {
+					var mID:int = viewArray[0].ClubMeetingID;
+					meetingUpdate(viewArray[0]); //should only be one
+					//now delete and re-download for this meeting
+					deleteMembersForMeeting(mID);
+					var args:Object = {ClubMeetingID:mID};
+					clubAttendance.Download(args);
+				}
+			}
+		}
+		
+		private function lookupMeetingHandler(serverMeetings:ArrayCollection):void {
+			//1. get meetings.
+			//2. foreach, compare with local meetings.  build dirty list
+			//3. save new/changed to local db, call download of attendees
+			//4. delete changed/removed
+
+				var i:int = 0, j:int = 0;
+				var len:int = arLocal.length;
+				var dirtyUpload:ArrayCollection = new ArrayCollection();
+				var dirtyUploadPromptList:ArrayCollection = new ArrayCollection();
+				var insertList:ArrayCollection = new ArrayCollection();
+				var updateList:ArrayCollection = new ArrayCollection();
+				closedList = new ArrayCollection();
+				var matched:Boolean = false;
+				//Message.text = "Found "+serverMeetings.length+" on the server.";
+				for(i=0; i<serverMeetings.length; i++) {
+					matched = false;
+					for(j=0; j<len; j++) {
+						var localMeeting:Object = arLocal[j];
+						//Matched.  If local dirty, add to upload list
+						if(serverMeetings[i].ClubMeetingID == localMeeting.ClubMeetingID) {
+							if(localMeeting.Dirty == 1) {
+//								if(localMeeting.LastModified < serverMeetings[i].LastModified) {
+//									dirtyUploadPromptList.addItem(localMeeting);
+//								} else {
+									dirtyUpload.addItem(localMeeting);
+//								}
+							} else {
+								// update meeting with new data
+								updateList.addItem(serverMeetings[i]);
+							}
+							matched = true;
+							break;
+						} 
+					}
+					//Not matched locally - insert locally as new
+					if(!matched)  insertList.addItem(serverMeetings[i]);
+				}
+				
+				//remove closed Meetings and members in local list
+				//Loop over locals
+				//TODO
+				for(j=0; j<arLocal.length; j++) {
+					var meeting:Object = arLocal[j];
+					matched = false;
+					for(i=0; i<serverMeetings.length; i++) {
+						if(serverMeetings[i].ClubMeetingID == meeting.ClubMeetingID) {
+							matched = true;
+						}
+					} 
+					//if in the locals but not in the server, remove from locals if not dirty
+					if(!matched) { 
+						closedList.addItem(meeting);//deleteMeeting(meeting.ClubMeetingID);
+						arLocal[j].Dirty =86;
+					}
+				}
+				if(closedList.length > 0) {
+					//select them in red
+					dgLocal.invalidateList();
+					//Popup prompt to remove meetings from list
+					var popDelete:popUpConfirm = popUpConfirm(PopUpManager.createPopUp(this, popUpConfirm, true));
+					popDelete.title = "Remove Closed Meetings";
+					popDelete.question.text = "Removed "+closedList.length+" closed meetings\n from local list? ";
+					
+            		popDelete.postBack = removeClosedMeetings;
+				}
+				
+				//Save the dirty to the server
+				for(i=0; i<dirtyUpload.length; i++) {
+					Message.text = "Saving "+(i+1)+" of "+dirtyUpload.length+" to server.";
+					saveOnLine(dirtyUpload[i].ClubMeetingID, i);
+				}
+				//insert New Locally
+				for(i=0; i<insertList.length; i++) {
+					Message.text = "Downloading meeting "+(i+1)+" of "+insertList.length;
+					meetingInsert(insertList[i], true); //downloads attendance automatically
+				}
+				//Update Locally
+				for(i=0; i<updateList.length; i++) {
+					Message.text = "Updating meeting "+(i+1)+" of "+updateList.length;
+					meetingUpdate(updateList[i]); //downloads attendance automatically
+				}
+				
+				//Get newly-updated meetings from server again after saveOnLine
+				//Note: this is now done in SaveQ2's return handler to avoid race condition
+//				for(i=0; i<dirtyUpload.length; i++) {
+//					var args:Object = {ClubMeetingID:dirtyUpload[i].ClubMeetingID, ClubID:clubID};
+//					clubMeeting.View(args);
+//				}
+				//Message.text = "Saved "+dirtyUpload.length+" edited meetings";
+				
+			// Re-validate and re-select the previously-selected meeting, if it still exists
+			// else blank it out
+			var i:int;
+			var matchedMeeting:Object;
+			for(i=0; i < arLocal.length; i++) {
+ 				if(arLocal[i].ClubMeetingID == clubMeetingID) {
+ 					matchedMeeting = arLocal[i];
+ 					break;
+ 				}
+ 			}
+ 			if(matchedMeeting != null) {
+ 				//dgLocal.selectedItem = matchedMeeting;
+ 				dgLocal.selectedIndex = i;
+ 			} else {
+ 				dgLocal.selectedIndex = -1;
+ 				resetMeetingPanel();
+ 			}
+				
+
+		}
+		private function removeClosedMeetings():void
+ 		{
+			for(var j:int=0; j<closedList.length; j++) {
+				var m:Object = closedList.getItemAt(j);
+				deleteMeeting(m.ClubMeetingID);
+			}
+			if(closedList.length > 0) {
+				loadDB();
+			}
+ 		}
+ 		
+		/*
+			Here after successful login
+			Config Update event;
+		*/
+		private function sqlLogin():void
+		{
+			Message.text = "Contacting Server...";
+			clubMeeting.Lookup(clubID);
+			
+		}
+		/*
+			Item Meetings from dgMeeting - itemClick
+		*/
+		private function itemMeeting(e:Event):void
+		{
+			var sql:SQLStatement = new SQLStatement();
+			var result:SQLResult;
+			var d:Date;
+			var s:String;
+			var i:int;
+			
+			clubMeetingID = e.currentTarget.selectedItem.ClubMeetingID;
+			sql.sqlConnection = sqlConn;
+			sql.text = "SELECT Dirty, LastModified, LastSaved From meeting WHERE ClubMeetingID = '" + 
+						clubMeetingID + "';";
+			sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			sql.addEventListener(SQLEvent.RESULT, itemMeetingResult);
+			sql.execute();
+			return;
+			// Handle Result
+			function itemMeetingResult(e:SQLEvent):void
+			{
+				result = sql.getResult();
+				if(result.data.length > 0)	// Have values
+				{
+					//TODO does this do anything? (inherited from Bruce)
+					s = result.data[0].LastSaved;
+					d = new Date(s);
+					s = dtFormat.format(d);
+					s = result.data[0].LastModified;
+					d = new Date(s);
+					s = dtFormat.format(d);
+					i = result.data[0].Dirty;
+				}
+			}
+		}
+		/*
+			Insert meeting list to local Database
+		*/
+		private function meetingInsert(obj:Object, downloadmembers:Boolean):void
+		{
+			var sqlCmd:String = "INSERT INTO meeting(ClubMeetingID, " +
+								"ClubMeeting, " + "ClubName, " + 
+								"Attended, " + "Exempt, " + "MakeUp, " +
+								"Total, " + "MeetingDate, " + "IsOpen, " +
+								"LastSaved, " + "LastModified, " + "Dirty ) ";
+			var sqlVal:String;
+			var sql:SQLStatement;
+			var sqlError:Boolean = false;	// Optimistic
+			var args:Object = {ClubMeetingID:0};
+			var today:String = dtFormat.format(new Date());
+			
+			sql = new SQLStatement;
+			sql.sqlConnection = sqlConn;
+			sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			sql.addEventListener(SQLEvent.RESULT, insertSync);
+			sqlVal = "VALUES('" + obj.ClubMeetingID + "'," +
+						"'" + obj.ClubMeeting + "'," +
+						"'" + obj.ClubName + "', " + 
+						"'" + obj.Attended + "', " +
+						"'" + obj.Exempt + "', " +
+						"'" + obj.MakeUp + "', " +
+						"'" + obj.Total + "', " +
+						"'" + obj.MeetingDate + "', " +
+						"'" + obj.IsOpen + "', " +
+						"'" + today + "', " +
+						"'" + today + "', " +
+						"'" + 0 + "')";		// Dirty flag
+			sql.text = sqlCmd + sqlVal;
+			sql.execute();
+			
+			// Local result;
+			function insertSync(e:SQLEvent):void
+			{
+				Message.text = "";
+			}
+		
+			if(downloadmembers) {
+				Message.text = "Downloading "+obj.ClubMeeting;
+				args.ClubMeetingID = obj.ClubMeetingID;
+				clubAttendance.Download(args);
+			}
+		}
+		/*
+			Update meeting in local Database
+		*/
+		private function meetingUpdate(obj:Object):void
+		{
+			//First update matching meeting in GUI via arLocal
+			var i:int;
+			for(i=0; i < arLocal.length; i++) {
+ 				if(arLocal[i].ClubMeetingID == obj.ClubMeetingID) {
+ 					arLocal[i] = obj;
+ 					dgLocal.invalidateList();
+ 				}
+ 			}
+			
+			//Then write to DB
+			//TODO handle this atomically
+			var today:String = dtFormat.format(new Date());
+			if(obj.LastModified == null) {
+				obj.LastModified = today;
+			}
+			if(obj.LastSaved == null) {
+				obj.LastSaved = today;
+			}
+			if(obj.Dirty == null) {
+				obj.Dirty = 0;
+			}
+			var sqlCmd:String = "UPDATE meeting SET "+
+								"ClubMeeting='" +obj.ClubMeeting + 
+								"' , ClubName= '" + obj.ClubName +
+								"' , Attended='"  + obj.Attended +
+								"' , Exempt='"    + obj.Exempt +
+								"' , MakeUp='"    + obj.MakeUp +
+								"' , Total='"     + obj.Total  +
+								"' , MeetingDate='" + obj.MeetingDate +
+								"' , IsOpen='"   + obj.IsOpen +
+								"' , LastSaved='" + obj.LastSaved +
+								"' , LastModified='" + obj.LastModified +
+								"' , Dirty='"     + obj.Dirty +
+								"' WHERE ClubMeetingID = '"+obj.ClubMeetingID +"' ";
+			var sqlVal:String;
+			var sql:SQLStatement;
+			
+			
+			sql = new SQLStatement;
+			sql.sqlConnection = sqlConn;
+			sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			sql.addEventListener(SQLEvent.RESULT, updateSync);
+			sql.text = sqlCmd;
+			sql.execute();
+			
+			// Local result;
+			function updateSync(e:SQLEvent):void
+			{
+				Message.text = "";
+			}
+			
+			//TODO Now update data model directly
+	
+		}
+		/*
+			Result inserted to local database
+		*/
+		private function clubAttendanceHandler(e:ResultEvent):void
+		{
+			var i:int, len:int;
+			var acM:ArrayCollection;
+			var rmtMsg:RemotingMessage;
+			var msgOp:String; 
+			var sqlCmd:String = "INSERT INTO members (" + 
+					"UserID, UserName, MemberID, MemberTypeID, " + 
+					"ClubAttendanceID, ClubMeetingID, MemberType, Attended, " + 
+					"Notes, Counts, Makeup, Excused, " + 
+					"Rof85, MealCode, GuestCode) " +
+					"VALUES(" + 
+					":UserID, :UserName, :MemberID, :MemberTypeID, " + 
+					":ClubAttendanceID, :ClubMeetingID, :MemberType, :Attended, " + 
+					":Notes, :Counts, :Makeup, :Excused, " + 
+					":Rof85, :MealCode, :GuestCode)";
+			var sql:SQLStatement;
+			var note:String;
+
+			rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		/*
+    		 * 
+    		 */
+			if(msgOp == "Download")
+			{
+				pgLoad.visible = true;
+				pgLoad.mode = "manual";
+				pgLoad.label = "Downloading Members %3%%";
+				acM = new ArrayCollection;
+				acM = e.result as ArrayCollection;
+				len = acM.length;
+				if(len > 0)
+				{
+					sql = new SQLStatement;
+					sql.sqlConnection = sqlConn;
+					sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+					sql.addEventListener(SQLEvent.RESULT, insertResult);
+					sql.text = sqlCmd;
+					i=0;
+					insertMembers();
+				}		
+			}
+			//Deprecated
+			if(msgOp == "List")
+			{
+				pgLoad.visible = true;
+				pgLoad.mode = "manual";
+				pgLoad.label = "Loading Members %3%%";
+				acM = new ArrayCollection;
+				acM = e.result as ArrayCollection;
+				len = acM.length;
+				if(len > 0)
+				{
+					sql = new SQLStatement;
+					sql.sqlConnection = sqlConn;
+					sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+					sql.addEventListener(SQLEvent.RESULT, insertResult);
+					sql.text = sqlCmd;
+					i=0;
+					insertMembers();
+				}		
+			}
+			if(msgOp == "SaveQ2")
+			{
+				var clubmeetingid:int = e.result as int;
+				Message.text = "Saving Meeting to server";
+				//lastSaved();
+				CursorManager.removeBusyCursor();
+				var args:Object = {ClubMeetingID:clubmeetingid, ClubID:clubID};
+				clubMeeting.View(args);
+				//dgLocal.invalidateList();
+				//bad timing selectStmt.execute();
+				
+			} 
+			
+			// Local insert
+			function insertMembers():void
+			{
+				note = (acM[i].Notes == null) ? " " : acM[i].Notes;
+
+				try {
+				sql.parameters[":UserID"] = acM[i].UserID;
+				sql.parameters[":UserName"] = acM[i].UserName;
+				sql.parameters[":MemberID"] = acM[i].MemberID;
+				sql.parameters[":MemberTypeID"] = (acM[i].MemberTypeID == null? 0:acM[i].MemberTypeID);
+				sql.parameters[":ClubAttendanceID"] = acM[i].ClubAttendanceID;
+				sql.parameters[":ClubMeetingID"] = acM[i].ClubMeetingID;
+				sql.parameters[":MemberType"] = acM[i].MemberType;
+				sql.parameters[":Attended"] = (acM[i].bitAttended ? "Y":"N");
+				sql.parameters[":Notes"] = note;
+				sql.parameters[":Counts"] = acM[i].bitCounts;
+				sql.parameters[":Makeup"] = acM[i].bitMakeup;
+				sql.parameters[":Excused"] = acM[i].bitExcused;
+				sql.parameters[":Rof85"] = acM[i].bitRof85;
+				sql.parameters[":MealCode"] = (acM[i].MealCodeID==null?0:acM[i].MealCodeID);
+				sql.parameters[":GuestCode"] = acM[i].GuestCode;
+				sql.execute();
+				}
+				catch (error:Error)
+			{
+				Message.text = "Member Update Failed: " + error.message;
+			}
+			}
+
+			// Local result;
+			function insertResult(e:SQLEvent):void
+			{
+				var result:SQLResult;
+				result = sql.getResult();
+				i++;
+				if(i < len)
+				{
+					insertMembers();
+					pgLoad.setProgress(i,len);
+				}
+				else 
+				{
+					pgLoad.visible = false;
+
+				}
+				Message.text = "";
+			}
+		}
+		/*
+			Attendance List - from Local Meeting list - itemClick
+		*/
+		private function loadMembers(e:Event):void
+		{
+			var id:int;
+			var d:String;
+			var dt:Date;
+			var result:SQLResult;
+			
+			if(e.currentTarget.selectedItem == null) return;
+			CursorManager.setBusyCursor();
+			clubMeetingID = e.currentTarget.selectedItem.ClubMeetingID;
+			d = e.currentTarget.selectedItem.MeetingDate;
+			dt = new Date(d);
+			selMeetingDate = dateFormat.format(dt);
+			selMeetingNm = e.currentTarget.selectedItem.ClubMeeting;	// Save selected
+			memberStmt.text = "SELECT * FROM members WHERE ClubMeetingID = " + clubMeetingID + ";";
+			memberStmt.execute();
+			MeetingPanel.title = selMeetingNm+" on "+selMeetingDate;
+			
+			//enable all meeting-related gui stuff
+			enableMeetingPanel(true);
+		}
+		/*
+			Here from member statement result
+		*/
+		private function memberResult(e:SQLEvent):void
+		{
+			var result:SQLResult = memberStmt.getResult();
+			var i:int, len:int
+			var m:Members;
+			var row:Object;
+			
+			if(result.data == null)
+			{
+				Message.text = "No Attendance Data on Disk";
+			}
+			else
+			{
+				Message.text = "";
+				len = result.data.length;
+				acMembers = new ArrayCollection;
+				clubMeetingID = result.data[0].ClubMeetingID;
+
+				for(i=0; i<len; i++)
+				{
+					row = result.data[i];
+					m = new Members();
+					m.loadData(row);
+					m.addEventListener(Event.CHANGE, updateEvent);
+					m.addEventListener(Event.COMPLETE, updateEvent);
+					m.addEventListener(Event.COMPLETE, noteUpdate);
+					acMembers.addItem(m);
+				}
+				if(dgMembers != null)
+				{
+					dgMembers.dataProvider = acMembers;
+					//dgMembers.invalidateList();
+				}
+			}
+			CursorManager.removeBusyCursor();
+			calculateAttendance();
+		}
+		/*
+			Here on change event of member class
+			Handled Check Box Change
+		*/
+		public function updateEvent(e:Event):void
+		{
+			var member:int;
+			var attend:String;
+			var theNote:String;
+			var sql:SQLStatement = new SQLStatement;
+			var today:String = dtFormat.format(new Date());		// Current datatime
+			member = e.currentTarget.UserID;
+			clubMeetingID = e.currentTarget.ClubMeetingID;
+			attend = e.currentTarget.Attended;
+			theNote = (e.currentTarget.Notes == null)? " ": e.currentTarget.Notes;
+			sql.text = "UPDATE members SET Attended = '" + attend + "'," + 
+					"  MealCode = '"+e.currentTarget.MealCode+"'," +
+					"  GuestCode = '"+e.currentTarget.GuestCode+"'," + 
+					"  Notes = '"+theNote+"'" + 
+					   " WHERE UserID = " +
+						member + " AND ClubMeetingID = " + clubMeetingID +
+						" AND Idx = "+e.currentTarget.Idx;
+			sql.sqlConnection = sqlConn;
+			sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			sql.addEventListener(SQLEvent.RESULT, updateResult);
+			sql.execute();
+//			memberStmt.text = "SELECT * FROM members WHERE ClubMeetingID = " + clubMeetingID + ";";
+//			memberStmt.execute();
+			// Local Handler
+			function updateResult(e:SQLEvent):void
+			{
+				lastModified();
+				calculateAttendance();
+			}
+		}
+		private function deleteAllMembers():void
+		{
+			var sql:SQLStatement = new SQLStatement;
+			
+			sql.sqlConnection = sqlConn;
+			sql.text = "DELETE FROM members ";
+			try {
+				sql.execute();
+				acMembers.removeAll();
+				
+			} catch (error:SQLError) {
+				Message.text = "Delete of all members failed: " + error.message;
+			}
+		}
+		private function deleteMembersForMeeting(clubMeetingID:int):void
+		{
+			var sqlDeleteMembers:SQLStatement = new SQLStatement;
+			var results:SQLResult;
+
+			sqlDeleteMembers.sqlConnection = sqlConn;
+			sqlDeleteMembers.text = "DELETE FROM members WHERE ClubMeetingID = "+clubMeetingID;
+			sqlDeleteMembers.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			sqlDeleteMembers.addEventListener(SQLEvent.RESULT, deleteMembersComplete);
+			
+			try
+			{
+				sqlDeleteMembers.execute();
+			}
+			catch (error:SQLError)
+			{
+				Message.text = "Member Delete for meeting "+clubMeetingID+" Failed: " + error.message;
+			}
+			function deleteMembersComplete(e:SQLEvent):void
+			{
+				
+				results = sqlDeleteMembers.getResult();
+				if(results.rowsAffected > 0)
+				{
+					//Alert.show("deleted members: "+results.rowsAffected);
+				}
+			}
+		}
+		/*
+			Subroutine to delete Meetings & Members
+		*/
+		private function deleteAllMeetings():void
+		{
+			var sql:SQLStatement = new SQLStatement;
+			
+			sql.sqlConnection = sqlConn;
+			sql.text = "DELETE FROM meeting ";
+			try
+			{
+				sql.execute();
+				arLocal = new Array();
+				dgLocal.dataProvider = arLocal;
+				dgLocal.invalidateList();
+			}
+			catch (error:SQLError)
+			{
+				Message.text = "Delete of all meetings failed: " + error.message;
+			}			
+		}
+		
+		/*
+			Subroutine to delete Meetings & Members TODO does this cascade?
+		*/
+		private function deleteMeeting(clubMeetingID:int):void
+		{
+			var sqlDeleteMeeting:SQLStatement = new SQLStatement;
+			var results:SQLResult;
+			
+			sqlDeleteMeeting.sqlConnection = sqlConn;
+			sqlDeleteMeeting.text = "DELETE FROM meeting WHERE ClubMeetingID = '"+clubMeetingID+"'";
+			
+			sqlDeleteMeeting.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			sqlDeleteMeeting.addEventListener(SQLEvent.RESULT, deleteMeetingComplete);
+			
+			try
+			{
+				sqlDeleteMeeting.execute();
+			}
+			catch (error:SQLError)
+			{
+				Message.text = "Meeting Delete Failed: " + error.message;
+			}
+			function deleteMeetingComplete(e:SQLEvent):void
+			{
+				
+				results = sqlDeleteMeeting.getResult();
+				if(results.rowsAffected > 0)
+				{
+					//Alert.show("deleted rows: "+results.rowsAffected);
+				}
+			}
+			
+			//now refresh arLocal
+			
+		}
+		
+		private function scanIn(e:KeyboardEvent):void
+		{	
+			if(e.keyCode == Keyboard.ENTER)
+			{
+				checkMember2();
+			}
+			
+		}
+		/*
+			Checks if member exist and plays sound
+			Updates member if member found
+		*/
+		private function checkMember2():void
+		{
+			//NEW version of checkMember
+			var badd:Sound = new deepClass as Sound;
+			var ding:Sound = new dingClass as Sound;
+			var scanID:String = scan.text;
+			var m:Members;
+ 			var i:int = 0;
+ 			var found:Boolean = false;
+ 			for(i=0; i < acMembers.length; i++) {
+ 				m = acMembers.getItemAt(i) as Members;
+ 				if(m.UserID.toString() == scanID) {
+ 					found = true;
+ 					m.boolAttended = true;
+ 					dgMembers.scrollToIndex(i);
+ 					dgMembers.selectedItem = m;
+ 					ding.play();
+ 					//TODO does it write to DB automatically?
+ 					break;
+ 				}
+ 			}
+ 			if(!found) {
+ 				badd.play();
+ 			}
+ 			scan.text = "";
+		
+		}
+		/*
+			Checks if member exist and plays sound
+			Updates member if member found
+		*/
+		private function checkMember():void
+		{
+			var sql:SQLStatement = new SQLStatement();
+			var sqlUpdate:SQLStatement = new SQLStatement();
+			var member:String = scan.text;
+			var results:SQLResult;
+			var bResult:Boolean = true;
+			var badd:Sound = new deepClass as Sound;
+			var ding:Sound = new dingClass as Sound;
+			
+			sql.sqlConnection = sqlConn;
+			sql.addEventListener(SQLErrorEvent.ERROR, noMember);
+			sql.addEventListener(SQLEvent.RESULT, foundMember);
+			sql.text = "SELECT UserID FROM members WHERE ClubMeetingID = " +
+					clubMeetingID + " AND UserID = " + member + ";";
+			sql.execute();
+			// Local handlers
+			function foundMember(e:SQLEvent):void
+			{
+				results = sql.getResult();
+				if(results.data == null)		// Not found
+				{
+					badd.play();
+				}
+				else
+				{
+					sqlUpdate.sqlConnection = sqlConn;
+					sqlUpdate.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+					sqlUpdate.addEventListener(SQLEvent.RESULT, checkUpdate);
+					sqlUpdate.text = "UPDATE members SET Attended = 'Y' WHERE UserID = " 
+							+ member + " AND ClubMeetingID = " + clubMeetingID;
+					scan.text = "";		//  field
+					sqlUpdate.execute();
+					memberStmt.text = "SELECT * FROM members WHERE ClubMeetingID = " + clubMeetingID + ";";
+					memberStmt.execute();
+					lastModified();
+				}
+			}
+			function noMember(e:SQLError):void
+			{
+				badd.play();
+			}
+			function checkUpdate(e:SQLEvent):void
+			{
+				results = sqlUpdate.getResult();
+				if(results.rowsAffected > 0)
+				{
+					ding.play();
+				}
+			}
+		}
+		private function setDate(obj:Object, obj1:Object):String
+		{
+			var d:Date;
+			var utc:Date;
+			
+			d = new Date(obj.MeetingDate);
+			utc = new Date(d.fullYearUTC, d.monthUTC, d.dateUTC);
+			
+			return dateFormat.format(utc);
+		}
+		private function remoteError(e:FaultEvent):void
+ 		{
+ 			Alert.show(e.fault.faultString, "Server Error");	
+ 			//Message.text = e.fault.message;
+ 			CursorManager.removeBusyCursor();
+ 		}
+ 		/*
+ 			Here from Attendance tab - btnSelectAll - click
+ 		*/
+ 		private function selectAllSql():void
+ 		{
+ 			selectAllStmt.text = 
+ 				"UPDATE members SET Attended = 'Y' WHERE ClubMeetingID = " + clubMeetingID;
+ 			selectAllStmt.execute();
+ 		}
+ 		// Here on success - reload local data for All or None
+ 		private function selectBulkResult(e:SQLEvent):void
+ 		{
+			memberStmt.text = "SELECT * FROM members WHERE ClubMeetingID = " + clubMeetingID + ";";
+			memberStmt.execute();
+			lastModified();
+ 		}
+ 		/*
+ 			Here from Attendance tab - btnSelectNone - click
+ 		*/
+ 		private function onSelectNoneClick():void {
+ 			var popDelete:popUpConfirm = popUpConfirm(PopUpManager.createPopUp(this, popUpConfirm, true));
+			popDelete.title = "Unselect All Members";
+			popDelete.question.text = "Clear local attendance for meeting?\nThis cannot be undone!";
+            popDelete.postBack = selectNoneSql;
+ 		}
+ 		private function selectNoneSql():void
+ 		{
+ 			selectNoneStmt.text =
+ 				"UPDATE members SET Attended = 'N' WHERE ClubMeetingID = " + clubMeetingID;
+ 			selectNoneStmt.execute();
+ 		}
+
+ 		/*
+ 			Modifies Meeting record - clubMeetingID
+ 		*/
+ 		private function lastModified():void
+ 		{
+ 			var sql:SQLStatement = new SQLStatement;
+ 			var today:String = dtFormat.format(new Date());
+ 			var result:SQLResult;
+ 			
+ 			var i:int;
+ 			var obj:Object;
+			for(i=0; i < arLocal.length; i++) {
+ 				if(arLocal[i].ClubMeetingID == clubMeetingID) {
+ 					arLocal[i].Dirty = 1;
+ 					arLocal[i].LastModified = today;
+ 					dgLocal.invalidateList();
+ 					break;
+ 				}
+ 			}
+ 			
+ 			sql.sqlConnection = sqlConn;
+ 			sql.text = "UPDATE meeting SET Dirty = 1, LastModified = '" + today +
+ 						"' WHERE ClubMeetingID = '" + clubMeetingID + "';";
+ 			sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+ 			sql.addEventListener(SQLEvent.RESULT, lastModResult);
+ 			sql.execute();
+ 			// Handle result
+ 			function lastModResult(e:SQLEvent):void
+ 			{
+ 				result = sql.getResult();
+ 				dgLocal.invalidateList();
+ 				//selectStmt.execute();
+ 				
+ 			}
+ 		}
+ 		/*
+ 			Update saved information
+ 		*/
+ 		private function lastSaved():void
+ 		{
+ 			var sql:SQLStatement = new SQLStatement;
+ 			var today:String = dtFormat.format(new Date());
+ 			var result:SQLResult;
+ 			
+ 			sql.sqlConnection = sqlConn;
+ 			sql.text = "UPDATE meeting SET Dirty = 0, LastSaved = '" + today +
+ 						"' WHERE ClubMeetingID = '" + clubMeetingID + "';";
+ 			sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+ 			sql.addEventListener(SQLEvent.RESULT, lastSaveResult);
+ 			sql.execute();
+ 			// Handle result
+ 			function lastSaveResult(e:SQLEvent):void
+ 			{
+ 				result = sql.getResult();
+ 				//selectStmt.execute();
+ 				Message.text = "Saved Attendance to Server";
+ 			}
+ 		}
+ 		/*
+ 			Here from btnSaveOnline - click
+ 		*/
+ 		private function saveOnLine(clubMeetingID:int, count:int):void
+ 		{
+ 			var id:int;
+ 			var sql:SQLStatement = new SQLStatement();
+ 			var result:SQLResult;
+ 			var arResult:Array;
+ 			var sendData:String;
+ 			
+ 			//id = dgLocal.selectedItem.ClubMeetingID; --passed in
+ 			Message.text = "Saving "+count+" edited meeting...";
+ 			sql.sqlConnection = sqlConn;
+ 			sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+ 			sql.addEventListener(SQLEvent.RESULT, saveOnLineResult);
+ 			sql.text = "SELECT ClubMeetingID, UserID, Attended, MemberTypeID, Notes, " +
+ 						"GuestCode, ClubAttendanceID, UserName, MealCode " +
+ 						"FROM members WHERE ClubMeetingID = " + clubMeetingID+ ";";
+ 			sql.execute();
+ 			// Local Handler
+ 			function saveOnLineResult(e:SQLEvent):void
+ 			{
+ 				result = sql.getResult();
+ 				arResult = result.data;
+ 				
+ 				Message.text = "Saving "+arResult.length+" records...";
+ 				sendData = JSON.encode(arResult);
+ 				clubAttendance.SaveQ2(sendData);
+ 				
+ 			}	
+ 		}
+// 		
+// 		private function mealCodeChange():void {
+//            mcLabelText=mealCodeComboBox.selectedItem.MealCode + " " + 
+//           	mealCodeComboBox.selectedItem.MealCodeID;
+//        }
+
+
+ 		/*
+ 			Called from notesSz - valueCommit
+ 		*/
+ 		public function noteUpdate(e:Event):void
+ 		{
+ 			var sql:SQLStatement = new SQLStatement();
+ 			var note:String;
+ 			var s:String, idx:String;
+ 			var userID:int;
+ 			
+ 			notesEdit = false;
+ 			scan.setFocus();
+ 			userID = e.currentTarget.UserID;
+ 			s = e.currentTarget.Notes;
+ 			note = (s == null) ? " " : s;
+			clubMeetingID = e.currentTarget.ClubMeetingID;
+			idx = e.currentTarget.Idx;
+ 			sql.sqlConnection = sqlConn;
+ 			sql.addEventListener(SQLErrorEvent.ERROR, sqlErrorResult);
+ 			sql.addEventListener(SQLEvent.RESULT, sqlNoteResult);
+ 			sql.text = "UPDATE members SET Notes = '" + note +
+ 						"' WHERE members.ClubMeetingID = '" + clubMeetingID + 
+ 						"' AND members.UserID = '" + userID +
+ 						"' AND members.Idx = '"+idx+"';";
+ 			sql.execute();
+ 			// Local Handler
+ 			function sqlNoteResult(e:SQLEvent):void
+ 			{
+ 				memberStmt.text = "SELECT * FROM members WHERE ClubMeetingID = " + clubMeetingID + ";";
+				memberStmt.execute();
+ 				//lastModified();
+ 			}
+ 			function sqlErrorResult(e:SQLErrorEvent):void
+ 			{
+ 				Message.text = e.error.message;
+ 			}
+ 		}
+// 		private function clearMessage(e:Event):void
+// 		{
+// 			try {
+// 				if(e.target.owner.id == "notesTx")
+// 				{
+// 					notesEdit = true;
+// 				}
+// 				Message.text = "";
+// 			} catch(e:ReferenceError) {
+// 				//ignore the pesky Error #1069: Property owner not found on mx.core.SpriteAsset and there is no default value.
+// 			}
+// 		}
+ 		/* 
+ 			Drops single table
+ 		*/
+ 		private function onClearDataClick():void {
+ 			//TODO get selected meeting
+ 			var popDelete:popUpConfirm = popUpConfirm(PopUpManager.createPopUp(this, popUpConfirm, true));
+			popDelete.title = "Clear Data: "+selMeetingNm;
+			popDelete.question.text = "Delete offline attendance for "+selMeetingNm+"?\nThis cannot be undone!";
+            popDelete.postBack = clearDataYes;
+ 		}
+ 		private function clearDataYes():void {
+ 			btnLoad.enabled = true;
+ 			resetMeetingPanel();
+ 			deleteMeeting(clubMeetingID);
+ 			deleteMembersForMeeting(clubMeetingID);
+ 			loadDB(); //reload meetings list
+ 			//we removed the selected Meeting, so reset lower meeting datagrid 			
+ 			//TODO unselect meeting
+ 			Message.text = "";
+ 		}
+ 		private function resetMeetingPanel():void {
+ 			acMembers = new ArrayCollection();
+			dgMembers.dataProvider = acMembers;
+			dgMembers.invalidateList();
+			enableMeetingPanel(false);
+			MeetingPanel.title = "";
+			attdCount = "";
+			attdTotal = "";
+			attdPercent = "";
+			
+ 		}
+ 		
+ 		/* 
+ 			Drops tables and restores new tables
+ 		*/
+ 		private function onClearALLDataClick():void {
+ 			var popDelete:popUpConfirm = popUpConfirm(PopUpManager.createPopUp(this, popUpConfirm, true));
+			popDelete.title = "Clear ALL Data";
+			popDelete.question.text = "Delete offline attendance for ALL meetings?\nThis cannot be undone!";
+            popDelete.postBack = clearALLDataYes;
+ 		}
+ 		private function clearALLDataYes():void {
+ 			btnLoad.enabled = true;
+ 			resetMeetingPanel();
+ 			deleteAllMeetings();
+ 			deleteAllMembers();
+ 		}
+ 		
+ 		public function onAddGuest():void {
+ 			//filter out non-members from list
+ 			var membersOnly:ArrayCollection = new ArrayCollection();
+ 			for(var i:int=0; i< acMembers.length; i++) {
+ 				if(acMembers[i].GuestCode == 0) { //not a guest
+ 					membersOnly.addItem(acMembers[i]);
+ 				}
+ 			}
+ 			
+ 			popUp = popUpAddGuest(PopUpManager.createPopUp(this, popUpAddGuest, true));
+ 			PopUpManager.centerPopUp(popUp);
+ 			popUp.guest = new Members();
+ 			popUp.loadGuestNames(membersOnly);
+ 			popUp.loadMealCodes(mealCodes);
+ 			popUp.addEventListener(CloseEvent.CLOSE, closeGuestPopup);
+ 			popUp["btnAddGuest"].addEventListener("click", closeGuestPopup); 
+
+ 		}
+ 		public function closeGuestPopup(e:Event):void {
+
+ 			if(popUp != null && !popUp.wasCanceled) {
+ 				addNewGuest(popUp.guest);
+ 			}
+ 		}
+ 		
+ 		private function addNewGuest(m:Object):void {
+ 			var sqlCmd:String = "INSERT INTO members (" + 
+					"UserID, UserName,  MemberTypeID, " + 
+					" ClubMeetingID, MemberType, Attended, " + 
+					"Notes, Counts, Makeup, Excused, " + 
+					"Rof85, MealCode, GuestCode, ClubAttendanceID) " +
+					"VALUES(" + 
+					":UserID, :UserName, :MemberTypeID, " + 
+					":ClubMeetingID, :MemberType, :Attended, " + 
+					":Notes, :Counts, :Makeup, :Excused, " + 
+					":Rof85, :MealCode, :GuestCode, :ClubAttendanceID)";
+					
+			var sql:SQLStatement = new SQLStatement;
+			sql.sqlConnection = sqlConn;
+			sql.addEventListener(SQLErrorEvent.ERROR, errorHandler);
+			sql.addEventListener(SQLEvent.RESULT, insertGuestResult);
+			sql.text = sqlCmd;
+ 			
+			m.addEventListener(Event.CHANGE, updateEvent);
+			m.addEventListener(Event.COMPLETE, updateEvent);
+			//m.addEventListener(Event.COMPLETE, noteUpdate);
+			acMembers.addItem(m);
+			//dgMembers.rowCount = dgMembers.rowCount+3;
+			dgMembers.invalidateList();
+			dgMembers.scrollToIndex(acMembers.length);
+			
+			dgMembers.selectedItem = m;
+			
+			//add to database
+
+				try {
+				sql.parameters[":UserID"] = m.UserID;
+				sql.parameters[":UserName"] = m.UserName;
+				//sql.parameters[":MemberID"] = m.MemberID;
+				sql.parameters[":MemberTypeID"] = m.MemberTypeID;
+				sql.parameters[":ClubAttendanceID"] = m.ClubAttendanceID;
+				sql.parameters[":ClubMeetingID"] = clubMeetingID;
+				sql.parameters[":MemberType"] = m.MemberType;
+				sql.parameters[":Attended"] = m.Attended;
+				sql.parameters[":Notes"] = m.Notes;
+				sql.parameters[":Counts"] = m.Counts;
+				sql.parameters[":Makeup"] = m.Makeup;
+				sql.parameters[":Excused"] = m.Excused;
+				sql.parameters[":Rof85"] = m.Rof85;
+				sql.parameters[":MealCode"] = m.MealCode;
+				sql.parameters[":GuestCode"] = m.GuestCode;
+				sql.execute();
+				}
+				catch (error:Error)
+				{
+				Message.text = "Member Update Failed: " + error.message;
+				}
+				
+				// Local result;
+			function insertGuestResult(e:SQLEvent):void
+			{
+				
+				Message.text = "Added New Guest ";
+				lastModified();
+			}
+				
+ 		}
+ 		
+ 		private function calculateAttendance():void {
+ 			/*
+ 			Attendance calculation algorithm, approved by RI in 2007:
+ 			AO = Active + LOA (Total eligible for attendance per meeting
+ 			AE = Active - Rule of 85 members
+ 			Thus, per the new rules, the attendance calculation is:
+ 			Attendance % = (AO + AE attending)/(AO Total + AE attending)
+ 			=(Active.attd + LOA.attd + (Active.attd - Rule of 85.attd))/
+ 			     (Active.total + LOA.total + (Active.attd - Rule of 85.attd)
+ 			     
+ 			     Exempt members don't count in totals 
+ 			*/
+ 			//loop through each member
+ 			var activeTotal:int = 0, activeAttd:int = 0;
+ 			var ro85Total:int = 0, ro85Attd:int = 0;
+ 			var loaTotal:int = 0, loaAttd:int = 0;
+ 			var m:Members;
+ 			var i:int = 0;
+ 			for(i=0; i < acMembers.length; i++) {
+ 				m = acMembers.getItemAt(i) as Members;
+ 				if(m.GuestCode != 0) continue;
+ 				if(m.Excused) {
+ 					continue;
+ 				} 
+ 				if(!m.Counts && m.MemberType != "Active-Rule of 85") {
+ 					//Alert.show("Not counting: "+m.UserName +", "+m.MemberType);		
+ 					continue;
+ 				}
+ 				
+				if(m.MemberType == "Active-Rule of 85") {
+					if(m.boolAttended) {
+ 						ro85Attd++;
+ 						ro85Total++;  
+ 					}
+ 				} else {
+ 					activeTotal++;
+ 					if(m.boolAttended)  activeAttd++;
+ 				} 
+ 			}
+ 			//attdPercent = ((activeAttd + loaAttd + activeAttd - ro85Attd)/(activeTotal + loaTotal + activeAttd - ro85Attd) * 100.0).toString();
+ 			attdPercent = ((activeAttd + loaAttd + ro85Attd)/(activeTotal + loaTotal + ro85Total) * 100.0 ).toString();
+ 			attdCount = (activeAttd + ro85Attd + loaAttd).toString();
+ 			attdTotal = (activeTotal + ro85Total + loaTotal).toString();
+ 			//attd1.invalidateDisplayList();
+ 			attd1.validateDisplayList();
+ 			attd2.validateDisplayList();
+ 			attd3.validateDisplayList();
+ 			//update this info in the local meetings db and datagrid
+ 			
+ 			     
+ 		}
+ 		private function editingComplete():void {
+ 			if(scan != null)
+			{
+				scan.setFocus();
+			}
+			//calculateAttendance();
+ 		}
+            
+        protected function displayProductCategoryName( row:Object, column:DataGridColumn ):String {
+      		return lookupMealCodeLabel(row[ column.dataField ]);
+    	}
+    	
+    	public function lookupMealCodeLabel(code:Object):String {
+    		var intCode:int = code as int;
+    		var mealName:String = " ";
+    		if(intCode == 0) return " ";
+    		//if(code == null) Alert.show("Null MealCode! "+code);
+    		//There exist better ways to do this part
+      		for ( var i:int=0; i<mealCodes.length; i++ ) {
+        		if ( intCode == mealCodes[i].MealCodeID )
+				{
+          			mealName = mealCodes[i].MealCode;
+          			break;
+        		}
+      		}
+
+      		return mealName;
+    	}
+    	
+    	public function popupSetup():void {
+    		popSetup = SetupPopup(PopUpManager.createPopUp(this, SetupPopup, true));
+    		popSetup.setConfig(config);
+    		PopUpManager.centerPopUp(popSetup);
+            popSetup.postBack = saveCFG;
+            
+    	}
+    	private function serverSync():void {
+    		//download from server: calls 
+    		Message.text = "Contacting server...";
+    		
+    		//Clear out lower meeting area otherwise it doesn't load correctly
+    		resetMeetingPanel();
+    		
+    		var args:Object = {LoginName:"", Password:""};
+			
+			args.LoginName = config.userNm;
+			args.Password = config.userPw;
+			log.debug("Connecting to server: "+clubMeeting.destination+", "+clubMeeting.endpoint);
+			log.debug("Login information: "+args.LoginName+", "+args.Password);
+			clubMeeting.Login(args);
+			
+//    		saveOnLine();
+			Message.text = "";
+    		loadDB();
+    	}
+    	
+    	// Create a PrintJob instance.
+//        private function doPrint():void {
+//            var printJob:FlexPrintJob = new FlexPrintJob();
+//            // Start the print job.
+//            if (printJob.start() != true) return;
+//            // Add the object to print. Do not scale it.
+//            printJob.addObject(dgMembers, FlexPrintJobScaleType.MATCH_WIDTH);
+//            // Send the job to the printer.
+//            printJob.send();
+//        }
+        public function doPrint() : void
+		{
+		
+			var printJob : FlexPrintJob = new FlexPrintJob();
+			//var thePrintView : FormPrintView = new FormPrintView();
+			
+			//Application.application.addChild(thePrintView);
+			
+			if(printJob.start() != true)
+			return;
+			
+			//Set the print view properties.
+			var thePrintView:PrintDataGrid = new PrintDataGrid();
+			thePrintView.width=printJob.pageWidth;
+			thePrintView.height=printJob.pageHeight;
+			
+			thePrintView.dataProvider = dgMembers.dataProvider;
+			thePrintView.columns = dgMembers.columns ;
+//			thePrintView.printableDataGrid.setStyle(”fontSize”, 8);
+//			thePrintView.printableDataGrid.setStyle(”wordWrap”, true);
+			
+			printJob.addObject(thePrintView, FlexPrintJobScaleType.MATCH_WIDTH);
+			
+			printJob.send();
+			
+			//Application.application.removeChild(thePrintView);
+		}
+
+		public function popupStatistics() : void
+		{
+			var today:String = dtFormat.format(new Date());
+			popUpStats = StatsPopup(PopUpManager.createPopUp(this, StatsPopup, true));
+ 			PopUpManager.centerPopUp(popUpStats);
+ 			popUpStats.attdRecord = calculateAttendanceRecord();
+ 			popUpStats.mealRecord = calculateMealRecord();
+ 			popUpStats.meetingLabel.text = selMeetingNm+" on "+selMeetingDate;
+ 			popUpStats.curTime.text = today;
+		}
+		
+		public function calculateMealRecord() : Array 
+		{
+			var mealRecords:Array = new Array();
+ 			var i:int = 0;
+ 			var m:Members;
+ 			//first load in meal codes as keys to object vals (name, cnt)
+ 			for(i=0; i < mealCodes.length; i++) {
+ 				var o:Object = new Object();
+ 				
+				o.MealCode = mealCodes[i].MealCode;
+				if(o.MealCode == "")  o.MealCode = "no meal type entered";
+				o.Total = 0;
+				mealRecords[mealCodes[i].MealCodeID] = o;
+			}
+			//now loop through members and hash to their meal code
+			for(i=0; i < acMembers.length; i++) {
+ 				m = acMembers.getItemAt(i) as Members;
+ 				if(m.Attended == 'N' || !m.boolAttended) continue;
+ 				mealRecords[m.MealCode].Total++;
+ 			}
+			return mealRecords; 
+		}
+		
+		public function calculateAttendanceRecord() : Object 
+		{
+			//0 = rotarian
+			//1 = guest of member
+			//2 = rotarian guest
+			//3 = guest of club
+			var total:int = 0, memAttd:int = 0;
+			var clubGuests:int = 0, memGuests:int = 0;
+			var rotarGuests:int = 0;
+ 			var m:Members;
+ 			var i:int = 0;
+ 			for(i=0; i < acMembers.length; i++) {
+ 				m = acMembers.getItemAt(i) as Members;
+ 				if(m.Attended == 'N' || !m.boolAttended) continue;
+ 				if(m.GuestCode == 0) {
+ 					memAttd++;
+ 				} else if(m.GuestCode == 1) {
+ 					memGuests++;
+ 				} else if(m.GuestCode == 2) {
+ 					rotarGuests++;
+ 				} else if(m.GuestCode == 3) {
+ 					clubGuests++;
+ 				} 
+ 				total++;
+ 			}
+ 			
+ 		  	var o:Object = new Object();
+ 		  	o.clubGuests = clubGuests;
+ 		  	o.rotarGuests = rotarGuests;
+ 		  	o.memGuests = memGuests;
+ 		  	o.memAttd = memAttd;
+ 		  	o.total = total;
+			return o; 
+		}
+		
+	//From: http://blog.flexexamples.com/2007/08/12/sorting-date-columns-in-a-datagrid/
+        private function date_sortCompareFunc(itemA:Object, itemB:Object):int {
+            /* Date.parse() returns an int, but
+               ObjectUtil.dateCompare() expects two
+               Date objects, so convert String to
+               int to Date. */
+            //var dateA:Date = new Date(Date.parse(itemA.dob));
+            var dateA:Date = new Date(itemA.MeetingDate);
+            var dateB:Date = new Date(itemB.MeetingDate);
+            return ObjectUtil.dateCompare(dateA, dateB);
+        }
+
+	
+		]]>
+	</mx:Script>
+	<mx:NumberFormatter id="twoDecimalFormat"
+        precision="1" 
+        rounding="up"
+        decimalSeparatorTo="."
+        thousandsSeparatorTo=","
+        useThousandsSeparator="true"
+        useNegativeSign="false"/>
+    <!-- Inline Item renderers -->
+    <mx:Component id="mealCodeLabelRenderer">
+    	<mx:Label text="{outerDocument.lookupMealCodeLabel(data.MealCode)}" />
+    </mx:Component>
+    <mx:states>
+    	<mx:State name="offline">
+    		<mx:SetProperty target="{btnLoad}" name="enabled" value="false"/>
+    		<mx:SetProperty target="{btnLoad}" name="toolTip" value="Must be Connected to sync"/>
+    		<mx:SetProperty target="{btnConnectedStatus}" name="label" value="Offline"/>
+			<mx:SetStyle target="{btnConnectedStatus}" name="color" value="#810404"/>
+			<mx:SetStyle target="{btnConnectedStatus}" name="icon" value="@Embed(source='assets/delete.png')"/>
+    	</mx:State>
+		<mx:State name="online">
+			<mx:SetProperty target="{btnLoad}" name="enabled" value="true"/>
+			<mx:SetProperty target="{btnLoad}" name="toolTip" value="Click to sync attendance with server"/>
+			<mx:SetProperty target="{btnConnectedStatus}" name="label" value="CONNECTED"/>
+			<mx:SetStyle target="{btnConnectedStatus}" name="color" value="#0D8104"/>
+			<mx:SetStyle target="{btnConnectedStatus}" name="icon" value="@Embed(source='assets/connect.png')"/>
+			<mx:SetStyle target="{btnConnectedStatus}" name="borderColor"/>
+			<mx:SetStyle target="{btnConnectedStatus}" name="themeColor"/>
+			<mx:SetProperty target="{btnConnectedStatus}" name="enabled" value="true"/>
+			<mx:SetProperty target="{btnConnectedStatus}" name="toolTip" value="Click to check connection"/>
+			<mx:SetProperty target="{vdividedbox1}" name="height" value="637"/>
+			
+		</mx:State>
+			
+	</mx:states>
+
+	<!--mx:TabNavigator x="10" y="80" width="660" height="505" backgroundAlpha="0.0" borderColor="#FEC92F" borderStyle="outset" id="navTab" backgroundColor="#FEC92F" fontSize="12"-->
+		
+			<mx:VDividedBox x="10" y="61" height="665" width="791" id="vdividedbox1">
+			<mx:Canvas label="On Line" width="789" height="630" backgroundAlpha="0.63" alpha="1.0" id="tabOnLine" borderStyle="none" borderColor="#0B2494">
+			<mx:DataGrid x="0" y="0" width="779" height="166" itemClick="loadMembers(event)" id="dgLocal" dataProvider="{arLocal}" headerHeight="38">
+				<mx:columns>
+					<mx:DataGridColumn headerText="-" width="25" dataField="Dirty" itemRenderer="classes.DirtyRenderer"/>
+					<mx:DataGridColumn headerText="Meeting Date" width="90"  labelFunction="setDate" dataField="MeetingDate" sortable="true" sortCompareFunction="date_sortCompareFunc"/>
+					<mx:DataGridColumn headerText="Club Meeting" dataField="ClubMeeting"/>
+					<mx:DataGridColumn headerText="Online Attended" width="70" dataField="Attended" headerWordWrap="true"/>
+					<mx:DataGridColumn headerText="Online Total" width="70" dataField="Total" headerWordWrap="true"/>
+					
+					<mx:DataGridColumn headerText="Last Modified Locally" width="133" dataField="LastModified" headerWordWrap="true"/>
+					<mx:DataGridColumn headerText="Last Saved to Server" width="133" dataField="LastSaved" headerWordWrap="true"/>
+					
+				</mx:columns>
+			</mx:DataGrid>
+			<mx:Panel width="784" height="455" layout="absolute" y="174" id="MeetingPanel" title="">
+				<mx:Canvas label="Attendance" width="764" height="415" id="attendTab" borderStyle="none" borderColor="#0B2494" x="0" y="0">
+					<mx:DataGrid  x="2" y="49" itemEditEnd="editingComplete" editable="true" id="dgMembers" dataProvider="{acMembers}" width="762" height="366">
+						<mx:columns>
+							<mx:DataGridColumn headerText="Attended" width="80" textAlign="center" dataField="boolAttended" rendererIsEditor="true"
+								editorDataField="selected">
+								<mx:itemRenderer>
+									<mx:Component>
+										<mx:CheckBox enabled="true" selected="{data.boolAttended}" change="data.boolAttended=selected" mouseOut="outerDocument.focusScan()"/>	
+									</mx:Component>
+								</mx:itemRenderer>
+							</mx:DataGridColumn>
+							<mx:DataGridColumn headerText="Member" width="160" dataField="UserName" itemRenderer="classes.NameLabelRenderer" editable="false"/>
+							<mx:DataGridColumn headerText="Type" width="140" dataField="MemberType" editable="false"/>
+							<mx:DataGridColumn headerText="Meal" width="160" dataField="MealCode" editorDataField="selectedMealCodeID"
+															itemRenderer="{mealCodeLabelRenderer}" rendererIsEditor="false">
+								<mx:itemEditor>  
+								<mx:Component>  
+								<mx:ComboBox dataProvider="{outerDocument.mealCodes}" labelField="MealCode" >
+								<mx:Script>
+                  				<![CDATA[
+                  				   
+                    				public function get selectedMealCodeID():int {
+                    					if(selectedItem == null) return 0;
+                    		  			return selectedItem.MealCodeID;
+                    				}
+                  				]]>
+                				</mx:Script>
+								</mx:ComboBox>  
+								</mx:Component>  
+								</mx:itemEditor> 
+							</mx:DataGridColumn>
+							<mx:DataGridColumn id="colNote" headerText="Notes"
+								editable="true" 
+								width="160" dataField="Notes"/>
+								<!--mx:DataGridColumn id="colNote" headerText="Notes"
+								itemRenderer="classes.notesSz" editorDataField="returnTx" rendererIsEditor="true" 
+								width="160" dataField="Notes"/-->
+
+						</mx:columns>
+					</mx:DataGrid>
+					
+					<mx:TextInput x="654" y="8" id="scan" maxChars="20" editable="true" creationComplete="initTab()" width="100"/>
+					<mx:Button x="10" y="10" label="Select All" id="btnAll" width="78" click="selectAllSql()"/>
+					<mx:Button x="96" y="10" label="Clear All" id="btnClear" width="74" click="onSelectNoneClick()"/>
+					<mx:Label x="590" y="10" text="User ID: "/>
+						<mx:Text x="305" y="10" text="Attended: " id="attdLabel"/>
+						<mx:Text x="447" y="10" id="attd1" text="({twoDecimalFormat.format(attdPercent)} % )" width="82" height="22"/>
+						<mx:Text x="365" y="10" id="attd2" text="{attdCount}" width="30" height="22"/>
+						<mx:Text x="395" y="10" text="of" id="attdOf"/>
+						<mx:Text x="411" y="10" text="{attdTotal}" width="34" height="20" id="attd3"/>
+						<mx:Button x="178" y="10" label="Add Guest" click="onAddGuest()" width="107" id="btnAddGuest">
+								<mx:icon>@Embed(source='assets/add.png')</mx:icon>
+						</mx:Button>
+					
+				</mx:Canvas>
+			</mx:Panel>
+			</mx:Canvas>
+			</mx:VDividedBox>
+		
+	<mx:Text x="328" y="6" id="Message" width="353" fontSize="12" color="#FFFFFF"/>
+	<mx:RadioButtonGroup id="rgCustom"/>
+	<mx:Style source="assets/Rotary.css"/>
+	<mx:ApplicationControlBar x="0" y="0" width="182" dock="true">
+		<mx:Button label="Setup" click="popupSetup()">
+			<mx:icon>@Embed(source='assets/wrench_orange.png')</mx:icon>
+		</mx:Button>
+		<mx:Button label="Sync" id="btnLoad" click="serverSync()" labelPlacement="right" enabled="false">
+			<mx:icon>@Embed(source='assets/table_refresh.png')</mx:icon>
+		</mx:Button>
+		<mx:Button label="Clear Data" id="btnClearData" click="onClearDataClick()">
+			<mx:icon>@Embed(source='assets/table_delete.png')</mx:icon>
+		</mx:Button>
+		<mx:Button label="Stats" click="popupStatistics()" id="btnStats">
+			<mx:icon>@Embed(source='assets/calculator.png')</mx:icon>
+		</mx:Button>
+		<!--mx:Button label="Print" id="btnPrint" icon="@Embed(source='assets/printer.png')" click="doPrint()" enabled="false"/-->
+		<mx:ProgressBar id="pgLoad" height="28"/>
+		<mx:Spacer width="95" height="0"/>
+		<mx:Text text="V 2.4 07/20/09" id="version" enabled="true"/>
+	</mx:ApplicationControlBar>
+	<mx:Label text="Attendance Module" fontSize="16" fontWeight="bold" fontStyle="italic" id="label1" x="65" y="26"/>
+	<mx:Image id="logo" source="@Embed(source='RotaryLogo.png')" x="9" y="10"/>
+	<mx:Button x="698" y="11" label="Offline " id="btnConnectedStatus" labelPlacement="bottom" click="checkNetworkConnection()" 
+			color="#810404" borderColor="#731806" themeColor="#6E0C04" enabled="true" width="93">
+		<mx:icon>@Embed(source='assets/delete.png')</mx:icon>
+	</mx:Button>
+</mx:WindowedApplication>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application layout="vertical" xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:examples="com.sample.examples.*" xmlns:tests="com.sample.examples.tests.*" viewSourceURL="srcview/index.html">
+	<mx:Style source="../assets/style.css"/>
+	<mx:Label text="Right click to view source"/>
+	<mx:Accordion width="100%">
+		<examples:ClientGrid width="100%" label="1) Client Bound Classic Data Grid (All pages loaded at once, paging/sort/filter happens on client.)"/>
+		<examples:AdvancedClientGrid width="100%" label="2) Client Bound Advanced Data Grid (All pages loaded at once, paging/sort/filter happens on client.)"/>
+		<examples:ServerGridSpringHibernateJ2EE width="100%" label="3) Server Bound Classic DataGrid (Only 1 page loaded at a time) - Spring/Hibernate/BlazeDS/Tomcat backend"/>
+		<examples:ServerGridDotNet width="100%" label="4) Server Bound Advanced DataGrid (Only 1 page loaded at a time) - .NET/ADO EF/Fluorine/IIS backend"/>
+		<examples:Goodies width="100%" label="5) Complete Screen UI, with Detached search, popup support, and Flexicious Databinding!!"/>
+		<examples:AdvancedHierarchicalGrid width="100%" label="6) Advanced datagrid with hierarchical data."/>
+		<examples:FilterRendererPropertiesGrid width="100%" label="7) Shows how to set filter renderer properties/styles. (Autocomplete filter and Editable filter)"/>
+		<tests:Tests width="100%" label="8) Tests with locked rows and columns, horizontal scrolling, dynamic ordering of grid sections, dynamic filter, footer."/>
+		<tests:ColumnWidths width="100%" label="9) Demonstrates the three different column width modes (fixed, percent and fitToContent."/>
+		<examples:ServerPreferencesGrid width="100%" label="10) Shows how to persist preferences on the server"/>
+
+	</mx:Accordion>
+</mx:Application>
+
+

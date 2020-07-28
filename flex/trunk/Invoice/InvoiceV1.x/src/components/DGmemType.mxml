@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" >
+	<mx:DataGrid id="dgMemType" width="400" height="220"
+		editable="true" dataProvider="{this.parentApplication.acCMTZeroAmt}">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Member Type" editable="false"  
+					dataField="MemberType"/>
+				<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+					dataField="strAmount"
+					itemRenderer="components.amtValid" editable="true"
+					editorDataField="returnTx"
+					rendererIsEditor="true"/>
+		</mx:columns>
+	</mx:DataGrid>
+</mx:Canvas>

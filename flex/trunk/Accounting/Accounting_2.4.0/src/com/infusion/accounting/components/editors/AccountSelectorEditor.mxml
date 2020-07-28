@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- borrowed from http://blog.flexmp.com/2007/12/12/datagrid-popup-as-itemeditor/  was Text -->
+<mx:Text xmlns:mx="http://www.adobe.com/2006/mxml"
+    implements="mx.controls.listClasses.IDropInListItemRenderer,mx.managers.IFocusManagerComponent"
+    xmlns:local="*"    
+    text="{GL_AccountLabel}" click="callLater(selectAccount)" 
+		toolTip="Click to select account…" doubleClick="callLater(selectAccount)" 
+		doubleClickEnabled="true" 
+    >
+ 	
+        <mx:Script>
+                <![CDATA[
+                	import mx.controls.DataGrid;
+                	import mx.managers.PopUpManager;
+                	import accounts.RegisterItem;
+            import com.infusion.accounting.models.AppModelLocator;
+            import mx.collections.XMLListCollection;
+            import mx.controls.listClasses.ListData;
+            import mx.controls.dataGridClasses.DataGridListData;
+            import mx.controls.listClasses.BaseListData;
+            import mx.controls.dataGridClasses.DataGridItemRenderer
+            import mx.events.FlexEvent;
+
+            public static var _model:AppModelLocator = AppModelLocator.getInstance();  
+            [Bindable] public var GL_AccountLabel:String = "--Select Account--";
+ 
+ //
+            private var _listData:DataGridListData;
+            // Define a property for returning the new value to the cell.
+            [Bindable]
+            public var registerItem:RegisterItem = new RegisterItem();
+
+            // Implement the drawFocus() method for the VBox.
+            /*
+            override public function drawFocus(draw:Boolean):void {
+                popUpButtonAccounts.setFocus();
+            }
+            */
+ 
+            override public function get data():Object {
+                return super.data;
+               
+            }
+ 
+            override public function set data(value:Object):void { 
+            	super.data = value;
+            	if(value != null) {
+            		GL_AccountLabel=data[_listData.dataField];
+            		registerItem = RegisterItem.castToRegisterItem(value);
+               		registerItem.GL_AccountID=value[_listData.dataField];
+             	}
+            }
+            override public function get listData():BaseListData
+            {
+                return _listData;
+            }
+ 
+            override public function set listData(value:BaseListData):void
+            {
+                _listData = DataGridListData(value);
+            }
+            
+            private function selectAccount():void
+			{	
+				var popAccts:popUpAccounts = popUpAccounts(PopUpManager.createPopUp(this, popUpAccounts, true));
+				popAccts.puAcct = _model.accountsXML;
+				popAccts.curAccount = registerItem.GL_Account; //TODO how to tell which acct FROM?
+				popAccts.callBack = AcctData;
+				popAccts.owner = this;
+						
+			}
+			
+	 
+		// Local function to handle callback
+		public function AcctData(x:XML):void
+		{	
+			registerItem.GL_Account = x.@Label;
+//			this.data['GL_Account'] = x.@Label;
+			registerItem.GL_AccountID = x.@ID;
+//			this.data['GL_AccountID'] = x.@ID;
+			GL_AccountLabel = x.@ID;
+			registerItem.GL_AccountTypeID = x.@GL_AccountType;
+//			this.data['GL_AccountTypeID'] = x.@GL_AccountType;
+			trace("-Select Account: "+x.toXMLString());
+			trace("-Select Account: "+registerItem);
+			
+			var myDG:DataGrid=this.owner as DataGrid;
+            //var row:int=_listData.rowIndex+myDG.verticalScrollPosition;
+            //this.data[_listData.dataField]=GL_AccountID; //GL_AccountID
+            this.data['GL_AccountTypeID'] = x.@GL_AccountType;
+            this.data['GL_Account'] = x.@Label;
+            this.data['GL_AccountID'] = GL_AccountLabel;
+            myDG.dataProvider.itemUpdated(data);
+
+		}
+ 
+        ]]>
+    </mx:Script>
+	<!--mx:Text id="accountName" text="{GL_AccountLabel}"
+		toolTip="Double Click to Edit…" doubleClick="callLater(selectAccount)" 
+		doubleClickEnabled="true" buttonMode="true" useHandCursor="true"
+		width="100%"/-->
+	<!--mx:Button toolTip="Select the account to credit"
+ 		icon="@Embed(source='../assets/images/folder_table.png')"
+ 		click="callLater(selectAccount)"
+ 		/-->
+</mx:Text>

@@ -1,0 +1,726 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ChargePanel2.mxml is a new version of ChargePanel.mxml that
+    acts as a GUI only.  Input is a ChargeItem.
+    setCallback: function to call when Save button is clicked
+    setCancelCallback: function to call when Cancel button is clicked
+    New: Prompts user to select a charge type.  This cannot be changed once selected.
+    Load: Accepts a ChargeItem, sets the gui state to equal it, but does not change the state 
+          of the ChargeItem, just in case it is cancelled.
+    Save: Sets the internal state of the ChargeItem to reflect the gui state.  Calls the Callback function
+    Cancel: does not change the ChargeItem at all.  Calls the CancelCallback function
+    -->
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="610" height="455" 
+	creationComplete="initPanel()" borderStyle="none" cornerRadius="4"
+	creationPolicy="all" currentState="newType" backgroundColor="#F9ECC4">
+	<mx:states>
+		<mx:State name="memberType">
+			<mx:AddChild position="lastChild">
+				<mx:DataGrid id="dgMemType" editable="true" width="425" height="340" 
+				 	color="#000000" y="117" x="10" dataProvider="{acItemMemberType}">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{chargeAmt}"/>
+			<mx:RemoveChild target="{lblAmt}"/>
+		</mx:State>
+		<mx:State name="memberReoccur">
+			<mx:AddChild  position="lastChild">
+				<mx:DataGrid x="10" y="117" width="425" id="dgMemReoccur" height="340" dataProvider="{_acMemRecurring}" color="#000000">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member" width="200" editable="false" dataField="UserName"/>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{chargeAmt}"/>
+			<mx:RemoveChild target="{lblAmt}"/>
+		</mx:State>
+		<mx:State name="memberSelected">
+			<mx:AddChild  position="lastChild">
+				<mx:DataGrid x="10" y="117" width="425" id="dgMemSelected" height="340" dataProvider="{_acMemSelected}" color="#000000">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member" width="200" editable="false" dataField="UserName"/>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Selected" width="80" dataField="IsSelected" textAlign="center" >
+							<mx:itemRenderer>
+      						<mx:Component>
+         						<mx:CheckBox change="data.IsSelected=selected"  selected="{data.IsSelected}"/>
+     						</mx:Component>						
+   						</mx:itemRenderer>
+						</mx:DataGridColumn>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="datebar">
+			<mx:AddChild position="lastChild">
+				<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="43" borderStyle="inset" backgroundColor="#F9ECC4" label="datesBar"  x="0" y="108" borderColor="#888888">
+					<mx:Label text="Meeting Dates:" textDecoration="underline" id="lbMeeting" color="#000000" x="10" y="10"/>
+					<mx:Label text="From:" id="lbFrom" color="#000000" x="110" y="10"/>
+					<mx:DateField id="startDate" editable="false" enabled="true" change="customDate(event)" color="#000000" x="155" y="10"/>
+					<mx:Label text="To:" id="lbTo" color="#000000" x="270" y="10"/>
+					<mx:DateField id="endDate" editable="false" enabled="true" change="customDate(event)" color="#000000" x="300" y="10"/>
+					<mx:ComboBox dataProvider="{acDate}" labelField="DateRange" rowCount="7"
+					 	id="sdrMenu" change="selDateMenu(event)" open="selDateMenu(event)" 
+					 	width="170" selectedIndex = "0" color="#000000" x="407" y="10"/>
+				</mx:Canvas>
+			</mx:AddChild>
+			<mx:SetStyle name="backgroundColor" value="#F9ECC4"/>
+		</mx:State>
+		<mx:State name="mealCode" basedOn="datebar">
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:ComboBox x="415" y="73" width="181" rowCount="6" id="cbMealCode" 
+					 labelField="MealCode"
+					 dataProvider="{acMealCodes}">
+				</mx:ComboBox>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:Label x="332" y="77" text="Meal Codes:"/>
+			</mx:AddChild>
+			<mx:SetProperty name="height" value="467"/>
+			<mx:SetProperty target="{sdrMenu}" name="width" value="156"/>
+			<!--mx:SetProperty target="{cbChargeType}" name="width" value="208"/>
+			<mx:SetProperty target="{chgDescript}" name="width" value="208"/>
+			<mx:SetProperty target="{inAccount}" name="width" value="208"/>
+			<mx:SetStyle target="{label7}" name="fontWeight" value="bold"/>
+			<mx:SetProperty target="{chargeAmt}" name="toolTip" value="Enter negative for credit"/>
+			<mx:SetProperty target="{lblAmt}" name="x" value="358"/>
+			<mx:SetProperty target="{chargeAmt}" name="x" value="419"/-->
+		</mx:State>
+		<mx:State name="mtgAttended" basedOn="datebar">
+			<mx:AddChild position="lastChild">
+				<mx:DataGrid id="dgMemType1" editable="true" width="424" height="292" 
+					dataProvider="{acItemMemberType}" color="#000000" y="168" x="10">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{lblAmt}"/>
+			<mx:RemoveChild target="{chargeAmt}"/>
+		</mx:State>
+		<mx:State name="newType" basedOn="memberType">
+			<mx:RemoveChild target="{dgMemType}"/>
+			<mx:SetProperty target="{chgCanvas}" name="y" value="1"/>
+			<mx:SetProperty target="{cbChargeType}" name="enabled" value="false"/>
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:Button x="473" y="10" label="Save" click="onSave()"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:Button x="535" y="10" label="Cancel" click="onCancel()"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:Label x="349" y="12" text="Preview Mode" width="116" color="#0B5409" fontStyle="italic" fontSize="13" fontWeight="bold"/>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	<mx:Canvas  width="100%" height="109"
+		backgroundColor="#F9ECC4" cornerRadius="4" borderColor="#888888" id="chgCanvas" x="0" y="0"  color="#000000" borderStyle="solid">
+		<mx:Label x="16" y="45" text="Description:" fontSize="10" id="label5"/>
+		<mx:TextInput x="99" y="43" editable="true" enabled="false" width="208" id="chgDescript" maxChars="50"/>
+		<mx:Label x="10" y="12" text="Charge Type:" id="label7" fontSize="10" fontWeight="bold"/>
+		<mx:RadioButtonGroup id="rgChgType"/>
+		<mx:ComboBox x="99" y="10" id="cbChargeType" rowCount="10" 
+			labelField="ChargeType" width="230" change="CTchange(event)" fontWeight="bold" fontSize="10" dataProvider="{_acChargeType}" enabled="false">
+		</mx:ComboBox>
+		<mx:Label x="35" y="75" text="Account:" id="label6"/>
+		<mx:TextInput x="99" y="73" id="inAccount" click="popAcctList()" 
+			toolTip="Select From Account List" width="208" maxChars="50" editable="false" enabled="false"/>
+		<mx:Label x="354" y="45" text="Amount:" id="lblAmt"/>
+		<mx:TextInput x="415" y="43" width="100" maxChars="10" id="chargeAmt" textAlign="center" restrict="0-9,.\-\" 
+			change="checkText()" text="0.00" enabled="false" toolTip="Enter negative for credit"/>
+		<!-- Make all tax stuff invisible for now -->
+		<mx:Label visible="false"  x="523" y="45" text="Tax Rate" textDecoration="underline" id="label1"/>
+		<mx:Label visible="false"  x="523" y="45" text="Percent:" id="label2"/>
+		<mx:Label visible="false" x="523" y="45" text="Min:" id="label3"/>
+		<mx:Label  visible="false" x="523" y="45" text="Max:" id="label4"/>
+		<mx:TextInput visible="false" x="523" y="45" maxChars="4" id="chgPercent" width="40" restrict="0-9,." change="checkText()" text="0" enabled="false"/>
+		<mx:TextInput visible="false" x="523" y="45" id="chgMin" maxChars="5" width="40" restrict="0-9,." change="checkText()" text="0" enabled="false"/>
+		<mx:TextInput visible="false" x="523" y="45" width="40" id="chgMax" maxChars="5" restrict="0-9,." change="checkText()" text="0" enabled="false"/>
+		</mx:Canvas>
+	<mx:RemoteObject
+    	id="periodDate" showBusyCursor="false"
+    	destination="ColdFusion"
+    	result="dateHandler(event)"
+    	fault="remoteError(event)"/>
+     <mx:RemoteObject
+    	id="memberRecurring" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="memberRecurringHandler(event)"
+    	fault="remoteError(event)"/>
+    <mx:RemoteObject
+    	id="memberSelected" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="memberSelectedHandler(event)"
+    	fault="remoteError(event)"/>
+    <mx:RemoteObject
+    	id="mealCode" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="mealCodeResult(event)"
+    	fault="remoteError(event)"/>
+    <mx:CurrencyFormatter id="usdFormat" precision="2" 
+        currencySymbol="" decimalSeparatorFrom="."
+        decimalSeparatorTo="." useNegativeSign="true" 
+        useThousandsSeparator="true" alignSymbol="left"/>
+	<mx:Script>
+		<![CDATA[
+			import InfusionGrp.SelectedMember;
+		import InfusionGrp.ChargeItem;
+		import mx.rpc.events.ResultEvent;
+		import mx.collections.ArrayCollection;
+		import mx.managers.PopUpManager;
+		import mx.controls.Alert;
+		import mx.rpc.events.ResultEvent;
+    	import mx.rpc.events.FaultEvent;
+    	import InfusionGrp.Recurring;
+    	
+		include "../InvConstants.as";
+		
+		[Bindable]
+		private var acDate:ArrayCollection;
+		[Bindable]
+		public var _acMemRecurring:ArrayCollection;
+		[Bindable]
+		public var _acMemSelected:ArrayCollection;
+		private var popAcct:popUpAccounts;
+		private var _dsn:String;
+		private var _endPoint:String;
+		[Bindable]
+		public var _acChargeType:ArrayCollection;
+		[Bindable]
+		public var acMealCodes:ArrayCollection;
+		private var inv:Invoice;
+		[Bindable]
+		public var acItemMemberType:ArrayCollection;
+		public var _ci:RemoteCharges;
+		private var _chargeItem:ChargeItem;
+		
+		// GUI-related
+		private var newChargePopup:PopUpChargeType;
+		
+		private function initPanel():void
+		{
+			inv = this.parentApplication._invoice;
+			_dsn = inv.dsn;
+			_endPoint = inv._endPoint;
+			_acChargeType = inv.acChargeType; //TODO pass in!
+//			inv.chargePanel = this;
+			
+			periodDate.source = _dsn + ".CFC.DateDAO";
+			periodDate.endpoint = _endPoint;
+			periodDate.GetPeriodDates();
+			memberRecurring.source = _dsn + ".CFC.ChargeMemberRecurringDAO"; 
+			memberRecurring.endpoint = _endPoint;
+			memberSelected.source = _dsn + ".CFC.ChargeMemberSelectedDAO"; 
+			memberSelected.endpoint = _endPoint;
+			mealCode.source = _dsn + ".CFC.MealCodeDAO";
+			mealCode.endpoint = _endPoint;
+			mealCode.Pick();
+		}
+		private function initMeals():void
+		{
+		//	cbMealCode.selectedItem = acMealCodes[0];
+			inv._SelChargeItem.ItemChargeID = acMealCodes[0].MealCodeID;	
+		}
+		/*
+			Set Display Mode
+		*/
+		public function setDisplay(display:int):void
+		{
+			var children:Array;
+			var i:int, len:int;
+			
+			// Date Field Mask
+			switch(display)
+			{
+				case 0: currentState = "newType"		// Empty
+					break;
+				case 1:
+					currentState = "";
+					break;
+				case 2:
+					currentState = "memberType";
+					break;
+				case 4:
+					currentState = "memberReoccur";
+					break;
+				case 8:
+					currentState = "datebar";
+					break;
+				case 10:
+					currentState = "mtgAttended";
+					break;
+				case 25:
+					currentState = "mealCode";
+					break;
+				case 33:
+					currentState = "memberSelected";
+					break;
+				default:
+					currentState = "newType";
+					Alert.show("Could not find display for "+display);
+					break;
+			}
+  		}
+  		/*
+  			Event Dispatch ????
+  			New Code
+  		*/
+  		private function checkText():void
+  		{
+  			var result:Boolean;
+  			chkValues();	
+  		}
+  		public function chkValues():Boolean
+		{	
+			if(chgPercent.length == 0){return false};
+			if(chgMin.length == 0){return false};
+			if(chgMax.length == 0){return false};
+			if(chargeAmt.length == 0) {return false};
+			if(chgDescript.length == 0) {return false};
+			return true;
+		}
+		/*
+		 	itemClick event from charges grid.
+		 	dgCharge
+		*/  
+		public function load(e:Event):void
+		{
+			var chgType:int;
+			var i:int, dateLen:int, id:int;
+			var fromdate:Date;
+			var todate:Date;
+			var rID:int;
+			var args:Object={ClubID:0,ChargeItemID:0};
+			var itemDisplayType:int;
+			var itemMemberType:ArrayCollection;
+			var ci:RemoteCharges;
+			var SCI:ChargeItem;
+			
+			currentState = "";
+			args.ClubID = inv.clubID;
+			inv.btnSaveCharge.enabled = true;
+			inv.btnDeleteCharge.enabled = true;
+			cbChargeType.enabled = true;
+			ci = new RemoteCharges();
+			SCI = e.currentTarget.selectedItem as ChargeItem;
+			inv._SelChargeItem = SCI;	// Need for 'Save'
+			inv.bUpdate = true;
+			// Fill in values
+			itemDisplayType = SCI.ItemDisplayType;
+			itemMemberType = SCI.ItemMemberType;
+			chgType = SCI.ItemTypeID;
+			chgDescript.text = SCI.ItemDescription;
+			chgPercent.text = SCI.ItemTaxPercent;
+			chgMin.text = SCI.ItemMinTax;
+			chgMax.text = SCI.ItemMaxTax;
+			chargeAmt.text = SCI.ItemAmount;
+			inAccount.text = SCI.ItemAccount;
+			setFields(true);
+				// Fill in Charge Item for Save / Update
+			ci.ChargeItemID = SCI.ItemChargeID;
+			ci.ChargeItem = SCI.ItemDescription;
+			ci.ChargeTypeID = SCI.ItemTypeID;
+			ci.TaxPercent = SCI.ItemTaxPercent;
+			ci.TaxMin = SCI.ItemMinTax;
+			ci.TaxMax = SCI.ItemMaxTax;
+			ci.IsActive = SCI.ItemIsActive;
+			ci.ClubID = SCI.ItemClubID;
+			ci.Amount = SCI.ItemAmount;
+			ci.MealCodeID = SCI.MealCodeID;
+			rID = SCI.ItemDateRngID;
+			
+			//Loop to match on DateID=rID
+			var dateId:int = 0;
+			dateLen = acDate.length;
+			for(dateId; dateId < dateLen; dateId++) {
+				if(acDate[dateId].DateID == rID) {
+					break;
+				}
+			}
+			dateId = (dateId < dateLen)? dateId: 0;
+				
+			if(rID > 0) 		// not custom
+			{
+				fromdate = new Date(acDate[dateId].StartPeriod);
+				todate = new Date(acDate[dateId].EndPeriod);
+			}
+			else
+			{
+				if(SCI.ItemDateFrom != null)
+				{
+					fromdate = SCI.ItemDateFrom;
+				}
+				else
+				{
+					fromdate = new Date();		// Default
+				}
+				if(SCI.ItemDateTo != null)
+				{
+					todate = SCI.ItemDateTo;
+				}
+				else
+				{
+					todate = new Date();
+				}
+			}
+
+			chargeAmt.text = SCI.ItemAmount;
+			
+			//TODO get rid of back-references from Invoice
+			inv.acctID = SCI.ItemAccountID;
+			inv.acctName = SCI.ItemAccount;
+			id = SCI.ItemTypeID;
+			// Set up display
+			setDisplay(itemDisplayType);
+			if(startDate != null)
+			{
+				startDate.selectedDate = fromdate;
+			}
+			if(endDate != null)
+			{
+				endDate.selectedDate = todate;
+			}
+			if(sdrMenu != null)
+			{
+				sdrMenu.selectedIndex = dateId;
+			}
+			
+			// setup dropdown and table data if needed
+			cbChargeType.selectedIndex = setCBindex(id);
+    		switch(id)
+    		{
+   				case perMemberType:
+    				acItemMemberType = itemMemberType;
+    				if(dgMemType != null)
+    				{
+    					dgMemType.invalidateList();
+    				}
+    				break;
+    			case perMeetingAttendedMemberType:
+    			case perMeetingMissedMemberType:
+    				acItemMemberType = itemMemberType
+    				if(dgMemType1 != null)
+    				{
+    					dgMemType1.invalidateList();
+    				}
+    				break;
+    			case perMemberRecurring:
+    				args.ChargeItemID = ci.ChargeItemID;
+    				memberRecurring.Lookup(args);
+    				break;
+    			case perMemberSelected:
+    				args.ChargeItemID = ci.ChargeItemID;
+    				memberSelected.Lookup(args);
+    				break;
+    			case perMealCode:
+    				cbMealCode.selectedIndex = setMealCode();
+    				break;
+
+   				default:
+   				    //Alert.show("Warning: Custom State "+id+" not found!");
+   					//currentState = "";
+    				//cbChargeType.selectedIndex = 0;
+    				break;
+			}
+			inv._ci = ci;
+			function setMealCode():int
+			{
+				var i:int, len:int, id:int;
+				
+				len = acMealCodes.length;
+				id = inv._SelChargeItem.MealCodeID;
+				for(i=0; i<len; i++)
+				{
+					if(acMealCodes[i].MealCodeID == id)
+					{
+						break;
+					}
+				}
+				return i;
+			}
+			
+		}
+		private function setCBindex(id:int):int
+		{
+			var i:int, len:int;
+			len = _acChargeType.length;
+			for(i=0; i<len; i++)
+			{
+				if(_acChargeType[i].ChargeTypeID == id)
+				{
+					break;
+				}
+			}
+			return i;
+		}
+		  /*
+        	Here from ComboBox Change Event
+        	Charge Item Tab id=cbChargeType
+        */        
+		private function CTchange(e:Event):void
+		{
+			var idx:int, mode:int;
+			var args:Object = {ClubID:0, ChargeItemID:0};
+			var SelChargeItem:ChargeItem = inv._SelChargeItem;
+			
+			args.ClubID = inv.clubID;
+			idx = e.currentTarget.selectedItem.ChargeTypeID;
+			mode = e.currentTarget.selectedItem.TypeID;
+			
+			setDisplay(mode);
+			
+			switch(idx)
+			{
+				case perMember:
+					SelChargeItem.ItemTypeID = idx;
+					break;
+				case perMemberType:
+					SelChargeItem.ItemTypeID = idx;
+					SelChargeItem.ItemMemberType = inv.createTypeArray();
+					acItemMemberType = SelChargeItem.ItemMemberType;
+					break;
+				case perMeetingAttended:
+					SelChargeItem.ItemTypeID = perMeetingAttended;
+					setMeeting();
+					break;
+				case perMeetingMissed:
+					SelChargeItem.ItemTypeID = perMeetingMissed;
+					setMeeting();
+					break;
+				case perMemberRecurring:
+					SelChargeItem.ItemTypeID = perMemberRecurring;
+					memberRecurring.Lookup(args);
+					break;
+				case perMemberSelected:
+				Alert.show("MemberSelected");
+					SelChargeItem.ItemTypeID = perMemberSelected;
+					memberSelected.Lookup(args);
+					break;
+				case perMakeUp:
+					SelChargeItem.ItemTypeID = perMakeUp;
+					setMeeting();
+					break;
+				case perMeetingAttendedMemberType:		// per member type
+					SelChargeItem.ItemTypeID = perMeetingAttendedMemberType;
+					SelChargeItem.ItemMemberType = inv.createTypeArray();
+					acItemMemberType = SelChargeItem.ItemMemberType;
+					break;
+				case perMeetingMissedMemberType:		// per member type
+					SelChargeItem.ItemTypeID = perMeetingMissedMemberType;
+					SelChargeItem.ItemMemberType = inv.createTypeArray();
+					acItemMemberType = SelChargeItem.ItemMemberType;
+					break;
+				case perMealCode:
+					SelChargeItem.ItemTypeID = perMealCode;
+					break;
+				default:
+					break;
+			}
+			function setMeeting():void
+			{
+				startDate.selectedDate = new Date();
+				endDate.selectedDate = new Date();
+			}
+			//inv._SelChargeItem = SelChargeItem;  Happens in Invoice caller
+		}
+		/*
+			Here on creation complete of memberType grid
+		*/
+		private function dgMemTypeRefresh():void
+		{
+			dgMemType.dataProvider = inv._SelChargeItem.ItemMemberType;	
+		}
+		private function dgMemType1Refresh():void
+		{
+			dgMemType1.dataProvider = inv._SelChargeItem.ItemMemberType;	
+		} 
+		/*
+			071808 - Add Member Recurring functions
+			Process results from ChargeMemberRecurringDAO
+		*/
+		public function memberRecurringHandler(e:ResultEvent):void
+		{
+    		var i:int, len:int, id:int;
+    		var ac:ArrayCollection;
+    		var r:Recurring;
+    		var sendData:String;
+    		var sendArray:Array;
+    		
+    		_acMemRecurring = new ArrayCollection();
+    		ac = e.result as ArrayCollection;
+    		len = ac.length;
+    		for(i=0; i<len; i++)
+    		{
+    			r = new Recurring(ac[i]);
+    			_acMemRecurring.addItem(r);
+    		}
+    		dgMemReoccur.dataProvider = _acMemRecurring;
+		}
+		/*
+			Add Per Member Selected functions
+			Process results from ChargeMemberSelectedDAO
+		*/
+		public function memberSelectedHandler(e:ResultEvent):void
+		{
+    		var i:int, len:int, id:int;
+    		var ac:ArrayCollection;
+    		var sm:SelectedMember;
+    		
+    		_acMemSelected = new ArrayCollection();
+    		ac = e.result as ArrayCollection;
+    		len = ac.length;
+    		for(i=0; i<len; i++)
+    		{
+    			sm = new SelectedMember(ac[i]);
+    			//Alert.show(""+sm);
+    			_acMemSelected.addItem(sm);
+    		}
+    		dgMemSelected.dataProvider = _acMemSelected;
+		}
+		private function mealCodeResult(e:ResultEvent):void
+		{
+			acMealCodes = e.result as ArrayCollection;
+		}
+		public function setDefaults():void
+		{
+			chgDescript.text = "";
+			inAccount.text = "";
+			chargeAmt.text = "0.00";
+			chgPercent.text = "0";
+			chgMin.text = "0";
+			chgMax.text = "0";
+			cbChargeType.selectedIndex = 0;
+		}
+  		/*
+			Enable / Disable Charge Item fields
+		*/
+		public function setFields(b:Boolean):void
+		{
+			chgDescript.enabled = b;
+//			chgPercent.enabled = b;
+//			chgMin.enabled = b;
+//			chgMax.enabled = b;
+			chargeAmt.enabled = b;
+			inAccount.enabled = b;
+		}
+		public function get fromDate():Date
+		{
+			return (startDate != null && startDate.selectedDate != null) ? startDate.selectedDate : new Date();
+		}
+		public function get toDate():Date
+		{
+			return (endDate != null && endDate.selectedDate != null) ? endDate.selectedDate : new Date();
+		}
+		public function get DateID():int
+		{
+			return (sdrMenu != null) ? sdrMenu.selectedItem.DateID : 0;
+		}
+		private function customDate(e:Event):void
+		{
+			sdrMenu.selectedIndex = 0;
+		}
+		private function selDateMenu(e:Event):void
+		{
+			var idx:int;
+			var sDate:String;
+			var eDate:String;
+					
+			sDate = e.currentTarget.selectedItem.StartPeriod;
+			eDate = e.currentTarget.selectedItem.EndPeriod;
+			
+			startDate.selectedDate = (sDate != "") ? new Date(sDate) : new Date();
+			endDate.selectedDate = (eDate != "") ? new Date(eDate) : new Date();
+		}
+		public function dateHandler(e:ResultEvent):void
+		{
+			acDate = e.result as ArrayCollection;
+		}
+		private function remoteError(e:FaultEvent):void
+ 		{
+ 			Alert.show(e.fault.faultString, "Server Error");	
+ 		}
+		private function popAcctList():void
+		{
+			popAcct = popUpAccounts(PopUpManager.createPopUp(this, popUpAccounts, true));
+            popAcct.puAcct = this.parentApplication.xmlAcctList;
+            popAcct.callBack = this.parentApplication.saveAcct;
+		}
+		/* New methods
+		setCallback: function to call when Save button is clicked
+    setCancelCallback: function to call when Cancel button is clicked
+    New: Prompts user to select a charge type.  This cannot be changed once selected and saved.
+    Load: Accepts a ChargeItem, sets the gui state to equal it, but does not change the state 
+          of the ChargeItem, just in case it is cancelled.
+    Save: Sets the internal state of the ChargeItem to reflect the gui state.  Calls the Callback function
+    Cancel: does not change the ChargeItem at all.  Calls the CancelCallback function
+    * */
+		
+		/*
+			Here from button click btnSaveCharge 
+			Charge Item tab.
+		*/
+		private function onSave():void
+		{
+			var today:Date = new Date();
+			var i:int, len:int;
+			var meal:int = 0;
+			
+			//if(!bUpdate)
+			//{
+				_ci = new RemoteCharges();
+			//}
+			//Alert.show("Charge type?! "+ chargeGrid.cbChargeType.selectedItem.ChargeTypeID);
+			if(this.cbMealCode != null && this.cbChargeType != null 
+				&& this.cbChargeType.selectedItem.ChargeTypeID == perMealCode)
+			{
+				meal = this.cbMealCode.selectedItem.MealCodeID;
+			} else {
+				meal = null;
+			}
+			_ci.ChargeItem = this.chgDescript.text;
+			_ci.ChargeTypeID = this.cbChargeType.selectedItem.ChargeTypeID;				
+			//TODO pass in_ci.ClubID = clubID;
+			_ci.IsActive = this.cbChargeType.selectedItem.IsActive;
+			_ci.Amount = this.chargeAmt.text;
+			_ci.DateRangeID = this.DateID;
+			_ci.DateFrom = this.fromDate;
+			_ci.DateTo = this.toDate;
+			//TODO pass in_ci.MealCodeID = meal;
+			_ci.TaxPercent = this.chgPercent.text;
+			_ci.TaxMin = this.chgMin.text;
+			_ci.TaxMax = this.chgMax.text;
+			//TODO pass in_ci.GL_Account = acctName;
+			//TODO pass in_ci.GL_AccountID = acctID;
+			 
+			//if(!bUpdate)
+			//{
+//				chargeItemCFC.Create(_ci); //TODO move out
+			//}
+			//else
+			//{
+//				chargeItemCFC.Update(_ci); //TODO move out
+			//}
+		}
+		
+		private function onCancel():void
+		{
+			
+		}
+		
+		
+	]]>
+	</mx:Script>
+</mx:Canvas>

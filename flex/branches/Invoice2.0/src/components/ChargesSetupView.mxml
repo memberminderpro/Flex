@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ChargesSetupComponent xmlns="components.*" xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="610" height="455" 
+	creationComplete="initPanel()" borderStyle="none" cornerRadius="4"
+	creationPolicy="all" currentState="newType" backgroundColor="#F9ECC4">
+	<mx:states>
+		<mx:State name="memberType">
+			<mx:AddChild position="lastChild">
+				<mx:DataGrid id="dgMemType" editable="true" width="425" height="340" 
+				 	color="#000000" y="117" x="10" dataProvider="{acItemMemberType}">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{chargeAmt}"/>
+			<mx:RemoveChild target="{lblAmt}"/>
+		</mx:State>
+		<mx:State name="memberReoccur">
+			<mx:AddChild  position="lastChild">
+				<mx:DataGrid x="10" y="117" width="425" id="dgMemReoccur" height="340" dataProvider="{_acMemRecurring}" color="#000000">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member" width="200" editable="false" dataField="UserName"/>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{chargeAmt}"/>
+			<mx:RemoveChild target="{lblAmt}"/>
+		</mx:State>
+		<mx:State name="memberSelected">
+			<mx:AddChild  position="lastChild">
+				<mx:DataGrid x="10" y="117" width="425" id="dgMemSelected" height="340" dataProvider="{_acMemSelected}" color="#000000">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member" width="200" editable="false" dataField="UserName"/>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Selected" width="80" dataField="IsSelected" textAlign="center" >
+							<mx:itemRenderer>
+      						<mx:Component>
+         						<mx:CheckBox change="data.IsSelected=selected"  selected="{data.IsSelected}"/>
+     						</mx:Component>						
+   						</mx:itemRenderer>
+						</mx:DataGridColumn>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="datebar">
+			<mx:AddChild position="lastChild">
+				<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="43" borderStyle="inset" backgroundColor="#F9ECC4" label="datesBar"  x="0" y="108" borderColor="#888888">
+					<mx:Label text="Meeting Dates:" textDecoration="underline" id="lbMeeting" color="#000000" x="10" y="10"/>
+					<mx:Label text="From:" id="lbFrom" color="#000000" x="110" y="10"/>
+					<mx:DateField id="startDate" editable="false" enabled="true" change="customDate(event)" color="#000000" x="155" y="10"/>
+					<mx:Label text="To:" id="lbTo" color="#000000" x="270" y="10"/>
+					<mx:DateField id="endDate" editable="false" enabled="true" change="customDate(event)" color="#000000" x="300" y="10"/>
+					<mx:ComboBox dataProvider="{acDate}" labelField="DateRange" rowCount="7"
+					 	id="sdrMenu" change="selDateMenu(event)" open="selDateMenu(event)" 
+					 	width="170" selectedIndex = "0" color="#000000" x="407" y="10"/>
+				</mx:Canvas>
+			</mx:AddChild>
+			<mx:SetStyle name="backgroundColor" value="#F9ECC4"/>
+		</mx:State>
+		<mx:State name="mealCode" basedOn="datebar">
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:ComboBox x="415" y="73" width="181" rowCount="6" id="cbMealCode" 
+					 labelField="MealCode"
+					 dataProvider="{acMealCodes}">
+				</mx:ComboBox>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:Label x="332" y="77" text="Meal Codes:"/>
+			</mx:AddChild>
+			<mx:SetProperty name="height" value="467"/>
+			<mx:SetProperty target="{sdrMenu}" name="width" value="156"/>
+			<!--mx:SetProperty target="{cbChargeType}" name="width" value="208"/>
+			<mx:SetProperty target="{chgDescript}" name="width" value="208"/>
+			<mx:SetProperty target="{inAccount}" name="width" value="208"/>
+			<mx:SetStyle target="{label7}" name="fontWeight" value="bold"/>
+			<mx:SetProperty target="{chargeAmt}" name="toolTip" value="Enter negative for credit"/>
+			<mx:SetProperty target="{lblAmt}" name="x" value="358"/>
+			<mx:SetProperty target="{chargeAmt}" name="x" value="419"/-->
+		</mx:State>
+		<mx:State name="mtgAttended" basedOn="datebar">
+			<mx:AddChild position="lastChild">
+				<mx:DataGrid id="dgMemType1" editable="true" width="424" height="292" 
+					dataProvider="{acItemMemberType}" color="#000000" y="168" x="10">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{lblAmt}"/>
+			<mx:RemoveChild target="{chargeAmt}"/>
+		</mx:State>
+		<mx:State name="newType" basedOn="memberType">
+			<mx:RemoveChild target="{dgMemType}"/>
+			<mx:SetProperty target="{chgCanvas}" name="y" value="1"/>
+			<mx:SetProperty target="{cbChargeType}" name="enabled" value="false"/>
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:Button x="473" y="10" label="Save" click="onSave()"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:Button x="535" y="10" label="Cancel" click="onCancel()"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{chgCanvas}" position="lastChild">
+				<mx:Label x="349" y="12" text="Preview Mode" width="116" color="#0B5409" fontStyle="italic" fontSize="13" fontWeight="bold"/>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	<mx:Canvas  width="100%" height="109"
+		backgroundColor="#F9ECC4" cornerRadius="4" borderColor="#888888" id="chgCanvas" x="0" y="0"  color="#000000" borderStyle="solid">
+		<mx:Label x="16" y="45" text="Description:" fontSize="10" id="label5"/>
+		<mx:TextInput x="99" y="43" editable="true" enabled="false" width="208" id="chgDescript" maxChars="50"/>
+		<mx:Label x="10" y="12" text="Charge Type:" id="label7" fontSize="10" fontWeight="bold"/>
+		<mx:RadioButtonGroup id="rgChgType"/>
+		<mx:ComboBox x="99" y="10" id="cbChargeType" rowCount="10" 
+			labelField="ChargeType" width="230" change="CTchange(event)" fontWeight="bold" fontSize="10" dataProvider="{_acChargeType}" enabled="false">
+		</mx:ComboBox>
+		<mx:Label x="35" y="75" text="Account:" id="label6"/>
+		<mx:TextInput x="99" y="73" id="inAccount" click="popAcctList()" 
+			toolTip="Select From Account List" width="208" maxChars="50" editable="false" enabled="false"/>
+		<mx:Label x="354" y="45" text="Amount:" id="lblAmt"/>
+		<mx:TextInput x="415" y="43" width="100" maxChars="10" id="chargeAmt" textAlign="center" restrict="0-9,.\-\" 
+			change="checkText()" text="0.00" enabled="false" toolTip="Enter negative for credit"/>
+		<!-- Make all tax stuff invisible for now -->
+		<mx:Label visible="false"  x="523" y="45" text="Tax Rate" textDecoration="underline" id="label1"/>
+		<mx:Label visible="false"  x="523" y="45" text="Percent:" id="label2"/>
+		<mx:Label visible="false" x="523" y="45" text="Min:" id="label3"/>
+		<mx:Label  visible="false" x="523" y="45" text="Max:" id="label4"/>
+		<mx:TextInput visible="false" x="523" y="45" maxChars="4" id="chgPercent" width="40" restrict="0-9,." change="checkText()" text="0" enabled="false"/>
+		<mx:TextInput visible="false" x="523" y="45" id="chgMin" maxChars="5" width="40" restrict="0-9,." change="checkText()" text="0" enabled="false"/>
+		<mx:TextInput visible="false" x="523" y="45" width="40" id="chgMax" maxChars="5" restrict="0-9,." change="checkText()" text="0" enabled="false"/>
+		</mx:Canvas>
+</ChargesSetupComponent>

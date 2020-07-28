@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" verticalAlign="middle" horizontalGap="2" 
+	implements="com.flexicious.controls.interfaces.IPager" styleName="pagingControl" 
+	horizontalScrollPolicy="off" creationComplete="onCreationComplete(event)" xmlns:controls="com.sample.examples.support.controls.*"
+	paddingTop="1"	 borderStyle="solid" >
+	 <mx:Metadata> [Event(name="pageChange",type="com.flexicious.grids.Events.PageChangeEvent")] </mx:Metadata>
+	 <mx:Metadata> [Event(name="reset")] </mx:Metadata>
+	 <mx:Metadata> [Event(name="totalRecordsSet")] </mx:Metadata>
+	<mx:Script>
+		<![CDATA[
+			import com.infusion.accounting.models.AppModelLocator;
+			import com.flexicious.export.ExportController;
+			import com.flexicious.grids.dependencies.IAdvancedExtendedDataGrid;
+			import com.flexicious.grids.dependencies.IExtendedDataGrid;
+			import com.flexicious.print.PrintController;
+			import com.flexicious.utils.UIUtils;
+			import com.sample.examples.support.export.MyExportOptions;
+			import com.sample.examples.support.gridSettings.SaveSettingsPopup;
+			import com.sample.examples.support.gridSettings.SettingsPopup;
+
+			import com.sample.examples.support.print.MyPrintOptions;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CollectionEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			[Bindable()]
+			private var _pages:ArrayCollection= new  ArrayCollection();
+			
+			private function onImgFirstClick():void
+			{
+				if(_pageIndex != 0)
+				{
+					_pageIndex = 0;
+					onPageChanged();
+				}
+			}
+			
+			private function onImgPreviousClick():void
+			{
+				if(_pageIndex > 0)
+				{
+					_pageIndex--;
+					onPageChanged();
+				}
+			}
+			
+			private function onImgNextClick():void
+			{
+				if(_pageIndex < pageCount-1)
+				{
+					_pageIndex++;
+					onPageChanged();
+				}
+			}
+			
+			private function onImgLastClick():void
+			{
+				if(_pageIndex < pageCount-1)
+				{
+					_pageIndex = pageCount-1;
+					onPageChanged();					
+				}
+			}
+			private function onPageCbxChange():void
+			{
+				_pageIndex = parseInt(cbxPage.selectedLabel)-1;
+				onPageChanged(); 
+			}
+			private function onPageChanged():void
+			{
+				if(cbxPage && (cbxPage.selectedIndex != (_pageIndex)))
+				{
+					cbxPage.selectedIndex=_pageIndex;
+				}
+				dispatchEvent(new Event("pageChange", true));
+			}
+			private function onCreationComplete(event:Event):void
+			{
+				btnSettings.visible=btnSettings.includeInLayout=_grid.enablePreferencePersistence;
+			}
+			public function reset():void{
+				_pageIndex=0;
+				dispatchEvent(new Event("reset", true));
+			}
+			private var _totalRecords:int=0;
+			[Bindable()]
+			private var _pageSize:int=50;
+			[Bindable()]
+			private var _pageIndex:int=0;
+			[Bindable()]
+			private var _pagerPosition:String="middle";
+			[Bindable()]
+			private var _grid:IExtendedDataGrid;
+			
+			[Bindable("pageChange")]
+			[Bindable("reset")]
+			public function get pageStart():int
+			{
+				return ((_pageIndex)*_pageSize)+1;
+			}
+			[Bindable("pageChange")]
+			[Bindable("reset")]
+			public function get pageEnd():int
+			{
+				var val:int= (_pageIndex+1)*_pageSize;
+				return (val>_totalRecords)?_totalRecords:val;
+			}
+			[Bindable("pageChange")]
+			[Bindable("reset")]
+			public function get pageIndex():int
+			{
+				return _pageIndex;
+			}
+			public function set pageIndex(val:int):void
+			{
+				_pageIndex = val;
+				onPageChanged();
+			}
+			
+			[Bindable("pageChange")]
+			[Bindable("reset")]
+			public function get pageCount():int
+			{
+				return pageSize>0?Math.ceil(totalRecords/pageSize):0;
+			}
+			
+
+			public function set totalRecords(val:int):void
+			{
+				_totalRecords = val;
+				var pages:ArrayCollection=new ArrayCollection();
+				for(var i:int=1;i<=pageCount;i++){
+					pages.addItem(i);
+				}
+				_pages=pages;
+				dispatchEvent(new Event("reset"));
+			}
+			[Bindable()]
+			public function get totalRecords():int
+			{
+				return _totalRecords;
+			}
+
+			public function set pageSize(val:int):void
+			{
+				_pageSize = val;
+			}
+			public function get pageSize():int
+			{
+				return _pageSize;
+			}
+			[Inspectable(defaultValue="bottomLeft", type="List", enumeration="bottomLeft,bottomRight,bottomMiddle" )]
+			public function set pagerPosition(val:String):void
+			{
+				_pagerPosition= val;
+			}
+	
+			public function get pagerPosition():String
+			{
+				return _pagerPosition;
+			}
+			public function set grid(val:IExtendedDataGrid):void
+			{
+				_grid = val;
+			}
+			[Bindable()]
+			public function get grid():IExtendedDataGrid
+			{
+				return _grid;
+				
+			}
+			
+			//TW: A bit of cairngorm
+			[Bindable] public var _model:AppModelLocator = AppModelLocator.getInstance();
+		]]>
+	</mx:Script>
+	<mx:HBox visible="{grid.enablePaging}" includeInLayout="{grid.enablePaging}"  verticalAlign="middle" horizontalGap="1" height="100%">
+		<mx:Label text="Items {pageStart} to {pageEnd} of {totalRecords}." height="20" width="120" baseline="-2"/>
+		<mx:Label text="Page {pageIndex+1} of {pageCount}" height="20" width="75" baseline="-2"/>
+		
+		<controls:ImageButton source="@Embed('../assets/images/16x16/firstPage.png')" click="onImgFirstClick()" 
+			enabled="{pageIndex>0}" toolTip="First Page" visible="{grid.enablePaging}" />
+		<controls:ImageButton source="@Embed('../assets/images/16x16/prevPage.png')" click="onImgPreviousClick()" 
+			enabled="{pageIndex>0}" toolTip="Previous Page" />
+		<controls:ImageButton source="@Embed('../assets/images/16x16/nextPage.png')" click="onImgNextClick()" 
+			enabled="{pageIndex &lt; (pageCount-1)}" toolTip="Next Page" />
+		<controls:ImageButton source="@Embed('../assets/images/16x16/lastPage.png')" click="onImgLastClick()" 
+			enabled="{pageIndex &lt; (pageCount-1)}" toolTip="Last Page" />
+		<mx:Label text="|"/>
+		<mx:Label text="Go to Page:"/>
+		<mx:ComboBox id="cbxPage" dataProvider="{_pages}" change="onPageCbxChange()" height="20" width="55"/>
+		<mx:Label text="|"/>
+	</mx:HBox>
+	<mx:Spacer width="100%" />
+	<!-- TW: not updating unless paging. Removing for now 
+	<mx:Label text="{totalRecords} records" height="20" width="100" baseline="-2" visible="{!grid.pagerVisible}" />
+	-->
+
+	<mx:HBox visible="{grid.enablePreferencePersistence}" includeInLayout="{grid.enablePreferencePersistence}"  
+		horizontalGap="0" verticalAlign="middle" height="100%">
+	<controls:ImageButton source="@Embed('../assets/images/16x16/settings.png')" click="var popup:SettingsPopup=new SettingsPopup();UIUtils.addPopUp(popup,_grid as DisplayObject);popup.grid=_grid;"   
+		toolTip="Preferences" />
+	<controls:ImageButton id="btnSettings" source="@Embed('../assets/images/16x16/saveSettings.png')" click="var popup:SaveSettingsPopup=new SaveSettingsPopup();UIUtils.addPopUp(popup,_grid as DisplayObject);popup.grid=_grid;"  
+		 toolTip="Save Preferences" />
+	<mx:Label text="|"/>
+	</mx:HBox>
+	<mx:HBox visible="{grid.enableFooters}" includeInLayout="{grid.enableFooters}"   verticalAlign="middle" horizontalGap="1" height="100%">
+	<controls:ImageButton source="@Embed('../assets/images/16x16/footerShowHide.png')" click="this.grid.footerVisible=!this.grid.footerVisible" 
+		toolTip="Show/Hide Footer" />
+	<mx:Label text="|"/>
+	</mx:HBox>
+	<mx:HBox visible="{grid.enableFilters}" includeInLayout="{grid.enableFilters}"   verticalAlign="middle" horizontalGap="1" height="100%">
+	<controls:ImageButton source="@Embed('../assets/images/16x16/filterShowHide.png')" click="this.grid.filterVisible=!this.grid.filterVisible" 
+		toolTip="Show/Hide Filter" />
+	<controls:ImageButton source="@Embed('../assets/images/16x16/filter.png')" click="this.grid.processFilter()" 
+		toolTip="Run Filter" />
+	<controls:ImageButton source="@Embed('../assets/images/16x16/clearFilter.png')" click="this.grid.clearFilter()" 
+		toolTip="Clear Filter" />
+	<mx:Label text="|"/>
+	</mx:HBox>
+
+	<controls:ImageButton source="@Embed('../assets/images/16x16/print.png')" click="PrintController.instance().print(this.grid,MyPrintOptions.create('Accounting Report','Source: '+_model.selectedAccountName+' '+_model.selectedAccountOwnerName))" 
+		toolTip="Print" />
+	<controls:ImageButton source="@Embed('../assets/images/16x16/pdf.png')" click="PrintController.instance().print(this.grid,MyPrintOptions.create('Accounting Report','Source: '+_model.selectedAccountName+' '+_model.selectedAccountOwnerName))" 
+		toolTip="Print" />
+	<controls:ImageButton source="@Embed('../assets/images/16x16/word.png')" click="ExportController.instance().export(this.grid,MyExportOptions.create(1))" 
+		toolTip="Export" />
+	<controls:ImageButton source="@Embed('../assets/images/16x16/export.png')" click="ExportController.instance().export(this.grid,MyExportOptions.create())" 
+		toolTip="Export" />
+		<mx:Label text="|"/>
+</mx:HBox>

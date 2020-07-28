@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:grids="com.flexicious.grids.*" xmlns:columns="com.flexicious.grids.columns.*" xmlns:mate="http://mate.asfusion.com/" xmlns:containers="com.flexicious.controls.containers.*" width="100%" xmlns:controls="com.flexicious.controls.*" xmlns:support="com.sample.examples.support.*">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ItemClickEvent;
+			import com.flexicious.utils.UIUtils;
+			import com.flexicious.grids.filters.FilterExpression;
+			import com.flexicious.grids.events.FilterPageSortChangeEvent;
+			import com.sample.SampleUIUtils;
+			import com.sample.model.Employee;
+			import com.flexicious.utils.DateRange;
+
+			private function onFilterPageSortChange(event:FilterPageSortChangeEvent):void
+			{
+				for each(var arg:FilterExpression in searchPanel.getFilterArguments())
+					event.filter.addFilterExpression(arg);
+			}
+		]]>
+	</mx:Script>
+	<mx:HBox width="100%" horizontalAlign="right">
+		<mx:Button label="View Explanation For Example" click="UIUtils.openBrowserPopup('http://www.flexicious.com/Home/FlexiciousUI',
+		'width=1024,height=768,lef t=0,top=0, toolbar=No,location=No,scrollbars=Yes,status=No,resizable=No,fullscreen=No')"/>
+	</mx:HBox>
+	<mx:HBox width="100%">
+		<!--We're using Panel here, but we can use containers:Form, Vbox, or HBox-->
+		
+		<containers:Panel id="searchPanel" title="Search" layout="horizontal">
+			<mx:VBox paddingLeft="5">
+				<mx:Label text="State Code:"/>
+				<controls:RadioButtonList dataProvider="{Employee.allStates}"  searchField="stateCode" rowCount="4" filterTriggerEvent="none"/>
+				<mx:Label text="Department:"/>
+				<controls:CheckBoxList dataProvider="{Employee.allDepartments}" searchField="department" rowCount="4" allowMultipleSelection="true" filterTriggerEvent="none"/>
+			</mx:VBox>
+			<mx:Form id="searchForm">
+				<mx:FormItem label="First Name:">
+					<controls:TextInput searchField="firstName" filterOperation="BeginsWith" filterTriggerEvent="none"/>
+				</mx:FormItem>
+				<mx:FormItem label="Last Name:">
+					<controls:TextInput searchField="lastName" filterOperation="BeginsWith" filterTriggerEvent="none"/>
+				</mx:FormItem>
+				<mx:FormItem label="Phone Number:">
+					<controls:TextInput searchField="phoneNumber" filterOperation="BeginsWith" filterTriggerEvent="none"/>
+				</mx:FormItem>
+				<mx:FormItem label="Salary:">
+					<support:SalaryRangeSlider searchField="annualSalary" filterTriggerEvent="none"/>
+				</mx:FormItem>
+				<mx:FormItem label="Hire Date:">
+					<controls:DateComboBox searchField="hireDate" addAllItem="true" filterTriggerEvent="none"/>
+				</mx:FormItem>
+				<mx:FormItem label="Any Field:">
+					<controls:TextInput searchField="details" filterOperation="Contains" filterTriggerEvent="none"/>
+				</mx:FormItem>
+				<mx:ControlBar horizontalAlign="right" width="100%">
+					<mx:Button label="Search" click="dgEmployees.processFilter()"/>
+					<mx:Button label="Clear Filters" click="dgEmployees.clearFilter();searchPanel.clearFilter();dgEmployees.processFilter()"/>
+				</mx:ControlBar>
+			</mx:Form>
+
+
+		</containers:Panel>
+		<mx:VBox width="100%">
+			<mx:TextArea width="100%" text="This example demonstrates a detached filter, and how you can hook into the Grid's filtering mechanim. EVERYTHING you see here, is accomplished with less than 10 (TEN) lines of your code!!"/>
+			<!--Datagrid with filterPageSortMode = client (All records loaded at once from the server)-->
+			<grids:ExtendedDataGrid id="dgEmployees" dataProvider="{Employee.getAllEmployees()}" 
+				enableFilters="true" enableCopy="true" enableFooters="true" enablePaging="true" 
+				height="271" pagerPosition="bottomMiddle" pageSize="15" width="100%" 
+				initialSortField="employeeId" filterPageSortChange="onFilterPageSortChange(event)">
+				<grids:columns>
+					<columns:ExtendedDataGridColumn headerText="Details" dataField="details" filterControl="TextInput" filterOperation="Contains" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn width="50" clickBehavior="clickPopup" clickPopupClass="com.sample.examples.support.EmployeePopup" linkText="Details"/>
+				</grids:columns>
+			</grids:ExtendedDataGrid>
+		</mx:VBox>
+	</mx:HBox>
+</mx:VBox>

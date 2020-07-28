@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MainPanelComponent xmlns:mx="http://www.adobe.com/2006/mxml" 
+	xmlns="com.infusion.attendanceoffline.views.*"
+	xmlns:meetings="com.infusion.attendanceoffline.views.components.meetings.*"
+	creationComplete="onCreateComplete()" >
+
+	<meetings:MeetingListView id="meetingList" dataMeetingList="{boundMeetingsList}"/>
+
+		<mx:HBox width="100%" horizontalAlign="center" height="114" id="hbox1">
+			<!-- Main panel -->
+			<mx:Panel  height="92" width="315" title="Hello World using Cairngorm and Remoting" id="mainPanel" x="435" 
+			resizeEffect="Resize" >
+				<mx:Canvas id="internalCanvas" height="100%" width="100%" 
+					horizontalScrollPolicy="off" verticalScrollPolicy="off">
+					<!-- Input label -->
+					<mx:Label x="9" y="18" text="Write your name:"/>
+					
+				</mx:Canvas>
+			</mx:Panel>	
+		</mx:HBox>
+
+</MainPanelComponent>

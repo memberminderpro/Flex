@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="300" xmlns:grids="com.flexicious.grids.*" xmlns:columns="com.flexicious.grids.columns.*">
+	<mx:Script>
+		<![CDATA[
+			import com.sample.SampleUIUtils;
+			import com.sample.model.Employee;
+			import com.flexicious.utils.DateRange;
+			
+		]]>
+	</mx:Script>
+	<mx:TextArea width="100%" text="The datagrid column exposes a columnWidthMode property, with three possible values: fixed, percent and fitToContent.
+	If this property is set to fixed, the grid sets the width to a fixed value specified by the width property.
+	If this property is set to fitContent, the grid identifies the longest string to be
+	displayed in this column, and sets the width of the column to this value.If this is set to percent, the grid divides the remaining width after allocating
+	all fixedWidth and fitToContent columns, on a percentage basis among all columns that have columnWidthMode set to percent."/>
+	
+		<grids:ExtendedAdvancedDataGrid enablePaging="true" dataProvider="{Employee.employees}" pageSize="25" width="500"
+			>
+			<grids:columns>
+				<columns:SelectAllAdvancedCheckBoxHeaderColumn columnWidthMode="fixed" headerText="Checkbox Header" width="15" selectedKeyField="employeeId"   />
+				<columns:ExtendedAdvancedDataGridColumn columnWidthMode="fitToContent" headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+				<columns:ExtendedAdvancedDataGridColumn columnWidthMode="fitToContent" headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+				<columns:ExtendedAdvancedDataGridColumn columnWidthMode="fitToContent" headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+				<columns:ExtendedAdvancedDataGridColumn columnWidthMode="fitToContent" percentWidth="25" headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+				<columns:ExtendedAdvancedDataGridColumn columnWidthMode="percent" percentWidth="33" headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+				<columns:ExtendedAdvancedDataGridColumn columnWidthMode="fixed" width="20" headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+				<columns:ExtendedAdvancedDataGridColumn columnWidthMode="percent" percentWidth="33" headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+				<columns:ExtendedAdvancedDataGridColumn columnWidthMode="percent" percentWidth="33" textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" filterTriggerEvent="enterKeyUp" footerRenderer="com.sample.examples.support.CustomFooterRenderer"/>
+			</grids:columns>
+
+		</grids:ExtendedAdvancedDataGrid>
+</mx:VBox>

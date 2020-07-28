@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" 
+	xmlns:grids="com.flexicious.grids.*" xmlns:columns="com.flexicious.grids.columns.*"
+	creationComplete="recvData()"
+	>
+	<mx:Script>
+<![CDATA[
+	import com.flexicious.utils.DateRange;
+  import com.flexicious.export.ExportController;
+  import com.flexicious.print.PrintController;
+  import mx.utils.NameUtil;
+  import mx.utils.ObjectUtil;
+  import mx.controls.AdvancedDataGrid;
+  import mx.collections.XMLListCollection;
+  import mx.rpc.events.FaultEvent;
+  import mx.rpc.events.ResultEvent;
+  import mx.controls.Alert;
+  import com.flexicious.grids.columns.*;
+	
+	//test with xml data
+	
+	[Bindable]
+    public var xmlData : XMLListCollection;
+   private function recvData() : void {
+	  xmlData = new XMLListCollection(new XMLList(xml.row));
+	}
+
+]]>
+</mx:Script>
+<grids:ExtendedDataGrid enablePaging="true" pageSize="5" enableFilters="true" id="grdItems2" dataProvider="{xmlData}" >
+  <grids:columns>
+   <columns:ExtendedDataGridColumn headerText="Dept" dataField="@dept" filterOperation="BeginsWith" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" />
+   <columns:ExtendedDataGridColumn headerText="Class" dataField="@class" filterOperation="BeginsWith" filterControl="TextInput"/>
+   <columns:ExtendedDataGridColumn headerText="Style" dataField="@style" filterOperation="BeginsWith" filterControl="TextInput"/>
+   <columns:ExtendedDataGridColumn headerText="Date" dataField="@date" filterControl="DateComboBox" filterComparisionType="date"/>
+ </grids:columns>
+</grids:ExtendedDataGrid>
+	<mx:HBox>
+	<mx:Button label="Print" click="PrintController.instance().print(grdItems2)"/>
+	<mx:Button label="Export" click="ExportController.instance().export(grdItems2)"/>	
+	</mx:HBox>
+<grids:ExtendedAdvancedDataGrid enablePaging="true" pageSize="5" id="grdItems" enableFilters="true" dataProvider="{xmlData}" >
+  <grids:columns>
+   <columns:ExtendedAdvancedDataGridColumn headerText="Dept" dataField="@dept" filterOperation="BeginsWith" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" />
+   <columns:ExtendedAdvancedDataGridColumn headerText="Class" dataField="@class" filterControl="TextInput"/>
+   <columns:ExtendedAdvancedDataGridColumn headerText="Style" dataField="@style" filterControl="TextInput"/>
+   <columns:ExtendedAdvancedDataGridColumn headerText="Date" dataField="@date" 
+   	filterRenderer="com.sample.examples.support.dateFormatCombo.MyDateComboBox" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}"/>
+   
+  </grids:columns>
+</grids:ExtendedAdvancedDataGrid>
+	<mx:HBox>
+	<mx:Button label="Print" click="PrintController.instance().print(grdItems)"/>
+	<mx:Button label="Export" click="ExportController.instance().export(grdItems)"/>	
+	</mx:HBox>
+<mx:Button click="recvData()"/>
+<mx:Script>
+	<![CDATA[
+		private var xml:XML=<data>
+<row  date="23/12/2009" dept="10" class="100" style="123123" styledescription="34.5 CRISS CROSS BELT" marketingname="Criss Cross Belt" cc="306" color="SHORT BREAD 55H1" marketingcolor="Brown" colorfamily="Brown" shelfpagepicture="x" debut="" exit="" ticket="" planinvfore-comm="" e-communits="" newarrival="x" pantfilter1_fit="" topfilter1_slvlength="" nav1_topnav="Accessories &amp; Gifts" nav1_leftnav_1="Accessories" nav1_sub-category="Belts" nav1_sub-subcategory="" nav2_topnav="" nav2_leftnav="" nav2_subcategory="" fashion="" fit="Pencil" pantfit="" measurements="2.75&quot; width at widest point" fabric="PVC" careinstructions="" countryoforigin="Import" coordinate1="" coordinate2="" coordinate3="" coordinate4="" comments=""/>
+<row  date="23/12/2009" dept="10" class="100" style="1321213" styledescription="34.5WIDE ELASTIC W/BUCKLE" marketingname="Wide Elastic Buckle Belt" cc="244" color="COBALT 32M0" marketingcolor="Blue" colorfamily="Blue" shelfpagepicture="" debut="2010 2-1" exit="2010 4-6" ticket="34.5" planinvfore-comm="200" e-communits="120" newarrival="" pantfilter1_fit="" topfilter1_slvlength="" nav1_topnav="Accessories &amp; Gifts" nav1_leftnav_1="Accessories" nav1_sub-category="Belts" nav1_sub-subcategory="" nav2_topnav="" nav2_leftnav="" nav2_subcategory="" fashion="" fit="Waist Belt" pantfit="" measurements="2.75&quot; width" fabric="PVC, Elastic" careinstructions="" countryoforigin="Import" coordinate1="" coordinate2="" coordinate3="" coordinate4="" comments=""/>
+<row  date="23/12/2009" dept="14" class="148" style="31223123" styledescription="34.5CLASSIC BALL TWIST NE" marketingname="Classic Ball with a Twist Necklace" cc="13" color="PILLOW" marketingcolor="Silver" colorfamily="Silver" shelfpagepicture="x" debut="2010 2-1" exit="2010 4-6" ticket="34.5" planinvfore-comm="110" e-communits="90" newarrival="" pantfilter1_fit="" topfilter1_slvlength="" nav1_topnav="Accessories &amp; Gifts" nav1_leftnav_1="Jewelry " nav1_sub-category="Necklaces" nav1_sub-subcategory="" nav2_topnav="" nav2_leftnav="" nav2_subcategory="" fashion="" fit="" pantfit="" measurements="18&quot;" fabric="Metal" careinstructions="" countryoforigin="Import" coordinate1="1751022_13" coordinate2="1613001_13" coordinate3="1614777_13" coordinate4="" comments=""/>
+</data>;
+	]]>
+</mx:Script>
+</mx:VBox>

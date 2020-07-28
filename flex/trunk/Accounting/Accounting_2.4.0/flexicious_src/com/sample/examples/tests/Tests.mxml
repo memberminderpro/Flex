@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:grids="com.flexicious.grids.*" 
+	xmlns:columns="com.flexicious.grids.columns.*" xmlns:mate="http://mate.asfusion.com/" 
+	width="100%" xmlns:controls="com.flexicious.controls.*" creationComplete="onCreationComplete()">
+	<mx:Script>
+		<![CDATA[
+		
+		//tests with all combinations of locked rows and columns
+		
+		
+			import com.sample.SampleUIUtils;
+			import com.flexicious.utils.DateRange;
+			import mx.collections.ArrayCollection;
+			import com.flexicious.grids.columns.ExtendedAdvancedDataGridColumn;
+			import com.flexicious.controls.MultiSelectComboBox;
+			import mx.formatters.DateFormatter;
+			import com.flexicious.utils.UIUtils;
+			import com.flexicious.grids.columns.customRenderers.CheckBoxRenderer;
+			import com.sample.model.Employee;
+			import mx.collections.XMLListCollection;
+
+			private function onCreationComplete():void
+			{
+				grid1.setFilterValue("employeeId","1",false);
+				grid1.setFilterValue("department",new ArrayCollection(["IT"]),false);
+				grid1.validateNow(); //Since we delay instantiate the Multi select, we need to do this for the
+				//grid to pickup that there is a filter in that value. 
+				grid1.processFilter();
+			}
+		]]>
+	</mx:Script>
+
+	<mx:TabNavigator width="100%" >
+		<mx:VBox label="Locked Column Classic">
+
+			<grids:ExtendedDataGrid  id="grid1" x="25" lockedColumnCount="2" enableFilters="true" enableCopy="true" enableFooters="true" enablePaging="true" dataProvider="{Employee.employees}" pagerPosition="bottomMiddle" pageSize="25" horizontalScrollPolicy="on" width="800" filterRowHeight="25" height="300"
+				footerRowHeight="60" pagerRenderer="com.sample.examples.support.CustomPagerControl"
+				displayOrder="pager,filter,header,footer,body" >
+
+				<grids:columns>
+					<columns:SelectAllCheckBoxHeaderColumn headerText="Checkbox Header" width="15" selectedKeyField="employeeId"/>
+					<columns:ExtendedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedDataGridColumn editable="true" headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" filterTriggerEvent="enterKeyUp" footerRenderer="com.sample.examples.support.CustomFooterRenderer"/>
+					<columns:ExtendedDataGridColumn headerText="State" dataField="stateCode" 
+						filterRenderer="com.sample.examples.support.dynamicFilter.DynamicFilterControl"/>
+					<columns:ExtendedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150"/>
+					<columns:ExtendedDataGridColumn headerText="Phone" dataField="phoneNumber" 
+						filterRenderer="com.sample.examples.support.dynamicFilter.DynamicFilterControl"/>
+					<columns:ExtendedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+				</grids:columns>
+
+			</grids:ExtendedDataGrid>
+		</mx:VBox>
+		<mx:VBox label="Locked Row Classic">
+
+
+			<grids:ExtendedDataGrid lockedRowCount="3" enableFilters="true" enableCopy="true" 
+				enableFooters="true" enablePaging="true" dataProvider="{Employee.employees}" pagerPosition="bottomMiddle" pagerRowHeight="40" pageSize="25" horizontalScrollPolicy="on" width="800" filterRowHeight="25" height="300"
+				displayOrder="filter,header,pager,body,footer"
+				pagerRenderer="com.sample.examples.support.CustomPagerControl"
+				>
+				<grids:columns>
+					<columns:SelectAllCheckBoxHeaderColumn width="15" selectedKeyField="employeeId"/>
+					<columns:ExtendedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" filterTriggerEvent="enterKeyUp" footerRenderer="com.sample.examples.support.CustomFooterRenderer"/>
+				</grids:columns>
+
+			</grids:ExtendedDataGrid>
+		</mx:VBox>
+		<mx:VBox label="Locked Row and Column Classic">
+
+
+			<grids:ExtendedDataGrid lockedRowCount="3" lockedColumnCount="2" enableFilters="true" enableCopy="true" enableFooters="true" enablePaging="true" dataProvider="{Employee.employees}" pagerPosition="bottomMiddle" pagerRowHeight="40" pageSize="25" horizontalScrollPolicy="on" width="800" filterRowHeight="25" height="300"
+				displayOrder="filter,pager,header,body,footer"  
+				pagerRenderer="com.sample.examples.support.CustomPagerControl"
+				>
+				<grids:columns>
+					<columns:SelectAllCheckBoxHeaderColumn width="15" selectedKeyField="employeeId"/>
+					<columns:ExtendedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" filterTriggerEvent="enterKeyUp" footerRenderer="com.sample.examples.support.CustomFooterRenderer"/>
+				</grids:columns>
+
+			</grids:ExtendedDataGrid>
+		</mx:VBox>
+		<mx:VBox label="Locked Column Advanced">
+			<grids:ExtendedAdvancedDataGrid lockedColumnCount="3" x="25" enableFilters="true" 
+				enableCopy="true" enableFooters="true" enablePaging="true" 
+				dataProvider="{Employee.employees}" pagerPosition="bottomMiddle" pagerRowHeight="40" pageSize="25" horizontalScrollPolicy="on" width="800" filterRowHeight="25" height="300"
+				displayOrder="filter,pager,body,footer" pagerRenderer="com.sample.examples.support.CustomPagerControl"
+				>
+
+				<grids:columns>
+					<columns:SelectAllAdvancedCheckBoxHeaderColumn headerText="Checkbox Header" width="15" selectedKeyField="employeeId"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" filterTriggerEvent="enterKeyUp" footerRenderer="com.sample.examples.support.CustomFooterRenderer"/>
+
+				</grids:columns>
+
+			</grids:ExtendedAdvancedDataGrid>
+		</mx:VBox>
+		<mx:VBox label="Locked Row Advanced">
+			<grids:ExtendedAdvancedDataGrid id="adg1" lockedRowCount="3" enableFilters="true" enableCopy="true" enableFooters="true" enablePaging="true" dataProvider="{Employee.employees}" pagerPosition="bottomMiddle" pagerRowHeight="40" pageSize="25" horizontalScrollPolicy="on" width="800" filterRowHeight="25" height="300"
+				displayOrder="pager,body,filter,footer" pagerRenderer="com.sample.examples.support.CustomPagerControl"
+				>
+				<grids:columns>
+					<columns:SelectAllAdvancedCheckBoxHeaderColumn headerText="Checkbox Header" width="15" selectedKeyField="employeeId"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" filterTriggerEvent="enterKeyUp" footerRenderer="com.sample.examples.support.CustomFooterRenderer"/>
+				</grids:columns>
+
+			</grids:ExtendedAdvancedDataGrid>
+		</mx:VBox>
+		<mx:VBox label="Locked Row and Column Advanced">
+
+
+			<grids:ExtendedAdvancedDataGrid lockedRowCount="3" lockedColumnCount="2" enableFilters="true" enableCopy="true" enableFooters="true" enablePaging="true" dataProvider="{Employee.getAllEmployeesWithFilter()}" pagerPosition="bottomMiddle" pagerRowHeight="40" pageSize="25" horizontalScrollPolicy="on" width="800" filterRowHeight="25" height="300"
+				displayOrder="filter,pager,body,footer" pagerRenderer="com.sample.examples.support.CustomPagerControl">
+				<grids:columns>
+					<columns:SelectAllAdvancedCheckBoxHeaderColumn headerText="Checkbox Header" width="15" selectedKeyField="employeeId"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput" filterTriggerEvent="enterKeyUp" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+					<columns:ExtendedAdvancedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" filterTriggerEvent="enterKeyUp" footerRenderer="com.sample.examples.support.CustomFooterRenderer"/>
+				</grids:columns>
+
+			</grids:ExtendedAdvancedDataGrid>
+		</mx:VBox>
+		
+		
+	</mx:TabNavigator>
+</mx:VBox>

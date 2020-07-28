@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TODO Is this even used? -->
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml">
+	<mx:DataGrid id="dgMemSelected" editable="true" width="400" height="220" 
+		dataProvider="{this.parentApplication.acMemSelected}" color="#000000">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Member" editable="false" dataField="UserName"/>
+			<!--mx:DataGridColumn headerText="Type" editable="false" dataField="MemberType"/-->
+			<mx:DataGridColumn headerText="" width="20" dataField="IsSelected" >
+			<mx:itemRenderer>
+      			<mx:Component>
+         		<mx:CheckBox click="data.IsSelected=!data.IsSelected"  selected="{data.IsSelected}"/>
+     			</mx:Component>						
+   			</mx:itemRenderer>
+			</mx:DataGridColumn>
+		</mx:columns>
+	</mx:DataGrid>
+</mx:Canvas>

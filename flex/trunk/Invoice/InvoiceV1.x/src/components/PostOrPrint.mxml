@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="122" height="78" backgroundColor="#F9ECC4">
+<mx:Script>
+		<![CDATA[
+		public function setPosted(b:Boolean):void {
+			if(b) {
+				currentState = "Posted";
+			} else {
+				currentState = "NotPosted";
+			}
+		}
+	]]>
+	</mx:Script>
+	<mx:states>
+		<mx:State name="Posted">
+			<mx:SetProperty target="{postInvoiceButton}" name="enabled" value="false"/>
+		</mx:State>
+		<mx:State name="NotPosted">
+			<mx:SetProperty target="{pmailButton}" name="enabled" value="false"/>
+		</mx:State>
+	</mx:states>
+	<mx:Button x="10" y="10" label="Post Invoice"
+		click="this.parentApplication._invoice.postInvoice()" id="postInvoiceButton"/>
+	<mx:Button x="10" y="40" label="PMail" width="98" icon="@Embed(source='assets/email.png')"
+		click="this.parentApplication._invoice.sendPmail()" id="pmailButton"/>
+	
+</mx:Canvas>

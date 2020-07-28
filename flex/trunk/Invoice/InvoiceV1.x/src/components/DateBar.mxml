@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" verticalAlign="middle" horizontalAlign="center" height="40" borderStyle="inset" backgroundColor="#F9ECC4" label="datesBar" horizontalGap="10">
+	<mx:Label text="Meeting Dates:" textDecoration="underline" id="lbMeeting" color="#000000"/>
+	<mx:Label text="From:" id="lbFrom" color="#000000"/>
+	<mx:DateField id="startDate" editable="false" enabled="true" change="customDate(event)" color="#000000"/>
+	<mx:Label text="To:" id="lbTo" color="#000000"/>
+	<mx:DateField id="endDate" editable="false" enabled="true" change="customDate(event)" color="#000000"/>
+	<mx:Spacer/>
+	<mx:Spacer/>
+	<mx:ComboBox dataProvider="{this.parentApplication.acDate}" labelField="DateRange"
+	 	id="sdrMenu" change="selDateMenu(event)" open="selDateMenu(event)" 
+	 	width="170" selectedIndex = "0" color="#000000"/>
+	<mx:Script>
+		<![CDATA[
+		
+		public function get fromDate():Date
+		{
+			return (startDate != null && startDate.selectedDate != null) ? startDate.selectedDate : new Date();
+		}
+		public function get toDate():Date
+		{
+			return (endDate != null && endDate.selectedDate != null) ? endDate.selectedDate : new Date();
+		}
+		public function get DateID():int
+		{
+			return (sdrMenu != null) ? sdrMenu.selectedItem.DateID : 0;
+		}
+		private function customDate(e:Event):void
+		{
+			sdrMenu.selectedIndex = 0;
+		}
+		private function selDateMenu(e:Event):void
+		{
+			var idx:int;
+			var sDate:String;
+			var eDate:String;
+					
+			sDate = e.currentTarget.selectedItem.StartPeriod;
+			eDate = e.currentTarget.selectedItem.EndPeriod;
+			
+			startDate.selectedDate = (sDate != "") ? new Date(sDate) : new Date();
+			endDate.selectedDate = (eDate != "") ? new Date(eDate) : new Date();
+		}
+		]]>
+	</mx:Script>
+</mx:HBox>

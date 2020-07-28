@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="horizontal" xmlns:controls="com.flexicious.controls.*" showCloseButton="true" close="UIUtils.removePopUp(this)" title="Employee Details" xmlns:containers="com.flexicious.controls.containers.*">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.CloseEvent;
+			import com.flexicious.utils.UIUtils;
+			import com.sample.model.Employee;
+			[Bindable()]
+			private var _selectedEmployee:Employee;
+
+			public function show(employee:Employee):void
+			{
+				_selectedEmployee=employee;
+			}
+		]]>
+	</mx:Script>
+	<containers:HBox width="100%" id="bindingContainer">
+
+		<mx:VBox paddingLeft="5">
+			<mx:Label text="State Code:"/>
+			<controls:RadioButtonList dataProvider="{Employee.allStates}" rowCount="4" bindingSource="{_selectedEmployee}" bindingProperty="stateCode" />
+			<mx:Label text="Department:"/>
+			<controls:ComboBox dataProvider="{Employee.allDepartments}" bindingSource="{_selectedEmployee}" bindingProperty="department"/>
+		</mx:VBox>
+		<mx:Form>
+			<mx:FormItem label="First Name:">
+				<controls:TextInput bindingSource="{_selectedEmployee}" bindingProperty="firstName"/>
+			</mx:FormItem>
+			<mx:FormItem label="Last Name:">
+				<controls:TextInput bindingSource="{_selectedEmployee}" bindingProperty="lastName"/>
+			</mx:FormItem>
+			<mx:FormItem label="Phone Number:">
+				<controls:TextInput bindingSource="{_selectedEmployee}" bindingProperty="phoneNumber"/>
+			</mx:FormItem>
+			<mx:FormItem label="Salary:">
+				<controls:TextInput bindingSource="{_selectedEmployee}" bindingProperty="annualSalary"/>
+			</mx:FormItem>
+			<mx:FormItem label="Hire Date:">
+				<controls:DateField bindingSource="{_selectedEmployee}" bindingProperty="hireDate" width="100"/>
+			</mx:FormItem>
+		</mx:Form>
+	</containers:HBox>
+	<mx:ControlBar width="100%" horizontalAlign="right">
+		<mx:Button label="Save &amp; Close" click="bindingContainer.applyChanges();dispatchEvent(new CloseEvent(Event.CLOSE))"/>
+		<mx:Button label="Cancel" click="dispatchEvent(new CloseEvent(Event.CLOSE))"/>
+	</mx:ControlBar>
+</mx:TitleWindow>

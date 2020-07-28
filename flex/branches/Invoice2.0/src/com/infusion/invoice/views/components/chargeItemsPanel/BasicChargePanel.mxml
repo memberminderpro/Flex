@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BasicChargePanelComponent xmlns:mx="http://www.adobe.com/2006/mxml"
+	xmlns="com.infusion.invoice.views.components.chargeItemsPanel.*" 
+	width="610" height="455" verticalGap="0" horizontalGap="0"
+	creationComplete="initPanel()" borderStyle="none" cornerRadius="4"
+	creationPolicy="all" currentState="Base1" backgroundColor="#F9ECC4">
+	<!--mx:states>
+		<mx:State name="memberType">
+			<mx:AddChild position="lastChild">
+				<mx:DataGrid id="dgMemType" editable="true" width="425" height="328" 
+				 	color="#000000" y="117" x="10" dataProvider="{acItemMemberType}">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{chargeAmt}"/>
+			<mx:RemoveChild target="{lblAmt}"/>
+		</mx:State>
+		<mx:State name="memberReoccur">
+			<mx:AddChild  position="lastChild">
+				<mx:DataGrid x="10" y="117" width="425" id="dgMemReoccur" height="328" dataProvider="{acMemRecurring}" color="#000000">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member" width="200" editable="false" dataField="UserName"/>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{chargeAmt}"/>
+			<mx:RemoveChild target="{lblAmt}"/>
+		</mx:State>
+		<mx:State name="memberSelected">
+			<mx:AddChild  position="lastChild">
+				<mx:DataGrid x="10" y="117" width="425" id="dgMemSelected" height="328" dataProvider="{acMemSelected}" color="#000000">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member" width="200" editable="false" dataField="UserName"/>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Selected" width="80" dataField="IsSelected" textAlign="center" >
+							<mx:itemRenderer>
+      						<mx:Component>
+         						<mx:CheckBox change="data.IsSelected=selected"  selected="{data.IsSelected}"/>
+     						</mx:Component>						
+   						</mx:itemRenderer>
+						</mx:DataGridColumn>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="mtgAttended" basedOn="datebar">
+			<mx:AddChild position="lastChild">
+				<mx:DataGrid id="dgMemType1" editable="true" width="424" height="277" 
+					dataProvider="{acItemMemberType}" color="#000000" y="168" x="10">
+					<mx:columns>
+						<mx:DataGridColumn headerText="Member Type" editable="false" dataField="MemberType"/>
+						<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+							dataField="strAmount" itemRenderer="components.amtValid" editable="true"
+						    editorDataField="returnTx" rendererIsEditor="true"/>
+					</mx:columns>
+				</mx:DataGrid>
+			</mx:AddChild>
+			<mx:RemoveChild target="{lblAmt}"/>
+			<mx:RemoveChild target="{chargeAmt}"/>
+		</mx:State>
+
+	</mx:states -->
+	<mx:HBox width="100%" height="109" verticalGap="0" horizontalGap="0"
+		backgroundColor="#F9ECC4" cornerRadius="4" borderColor="#888888" color="#000000" borderStyle="solid">
+		<mx:Form horizontalGap="0">
+			<mx:FormItem label="Description: ">
+				<mx:TextInput id="chargePanelDescriptionInput" editable="true" enabled="false" maxChars="48"/>
+			</mx:FormItem>
+			<mx:FormItem label="Account: ">
+				<mx:TextInput x="99" y="73" id="inAccount" click="popAcctList()" 
+					toolTip="Select From Account List" width="208" maxChars="50" editable="false" enabled="false"/>
+			</mx:FormItem>
+		</mx:Form>
+		<mx:Form id="basicChargePanelOptionalForm" horizontalGap="0">
+			<mx:FormItem label="Amount:" id="baseAmount">
+			<!-- TODO Validator -->
+				<mx:TextInput x="415" y="43" width="100" maxChars="10" id="chargeAmt" textAlign="center" restrict="0-9,.\-\" 
+				change="checkText()" text="0.00" enabled="false" toolTip="Enter negative for credit"/>
+			</mx:FormItem>
+			<mx:FormItem label="Meal Code:" id="baseMealCode">
+			<!-- TODO Should this even be here? -->
+				<mx:ComboBox width="181" rowCount="6" id="cbMealCode" 
+					 labelField="MealCode"
+					 dataProvider="{staticDataMealCodes}">
+				</mx:ComboBox>
+			</mx:FormItem>
+		</mx:Form>
+
+		<!-- Make all tax stuff invisible for now -
+		<mx:Label visible="false"  x="523" y="45" text="Tax Rate" textDecoration="underline" id="label1"/>
+		<mx:Label visible="false"  x="523" y="45" text="Percent:" id="label2"/>
+		<mx:Label visible="false" x="523" y="45" text="Min:" id="label3"/>
+		<mx:Label  visible="false" x="523" y="45" text="Max:" id="label4"/>
+		<mx:TextInput visible="false" x="523" y="45" maxChars="4" id="chgPercent" width="40" restrict="0-9,." change="checkText()" text="0" enabled="false"/>
+		<mx:TextInput visible="false" x="523" y="45" id="chgMin" maxChars="5" width="40" restrict="0-9,." change="checkText()" text="0" enabled="false"/>
+		<mx:TextInput visible="false" x="523" y="45" width="40" id="chgMax" maxChars="5" restrict="0-9,." change="checkText()" text="0" enabled="false"/
+		-->
+
+
+	</mx:HBox>
+	<DateBarView id="baseDateBar" width="100%" height="100%"/>
+	<mx:VBox id="baseVBox" width="100%" height="100%"/>
+	
+		<mx:Script>
+			<![CDATA[
+				  		/**
+  		 * whether to enable save button **/
+  		public function chkValues():Boolean
+		{	
+			if(chgPercent.length == 0){return false};
+			if(chgMin.length == 0){return false};
+			if(chgMax.length == 0){return false};
+			if(chargeAmt.length == 0) {return false};
+			if(chgDescript.length == 0) {return false};
+			if(cbChargeType.selectedItem.TypeID == 0) {return false;}
+			return true;
+		}
+			]]>
+		</mx:Script>
+
+</BasicChargePanelComponent>

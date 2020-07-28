@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<NetworkStatusIndicator 
+	xmlns="com.infusion.attendanceoffline.views.components.*"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	label="Offline " labelPlacement="bottom" click="checkNetworkConnection()" 
+	color="#810404" borderColor="#731806" themeColor="#6E0C04" enabled="true" width="93">
+	 <!--mx:states>
+    	<mx:State name="offline">
+    		<mx:SetProperty target="{this}" name="label" value="Offline"/>
+			<mx:SetStyle target="{this}" name="color" value="#810404"/>
+			<mx:SetStyle target="{this}" name="icon" value="@Embed(source='assets/delete.png')"/>
+    	</mx:State>
+		<mx:State name="online">
+			<mx:SetProperty target="{this}" name="label" value="CONNECTED"/>
+			<mx:SetStyle target="{this}" name="color" value="#0D8104"/>
+			<mx:SetStyle target="{this}" name="icon" value="@Embed(source='assets/connect.png')"/>
+			<mx:SetStyle target="{this}" name="borderColor"/>
+			<mx:SetStyle target="{this}" name="themeColor"/>
+			<mx:SetProperty target="{this}" name="enabled" value="true"/>
+			<mx:SetProperty target="{this}" name="toolTip" value="Click to check connection"/>
+	    </mx:State>	
+	</mx:states>
+			
+	<mx:icon>@Embed(source='assets/delete.png')</mx:icon-->
+</NetworkStatusIndicator>

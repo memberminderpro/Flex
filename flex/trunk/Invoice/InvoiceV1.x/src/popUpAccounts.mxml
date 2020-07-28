@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" title="Accounts" fontSize="12" 
+	creationComplete="popUpInit()" close="removeDetail()" showCloseButton="true" horizontalAlign="center" verticalAlign="middle" 
+	borderAlpha="1" backgroundColor="#A5AEB8" borderColor="#CCCCCC" width="375" height="400" layout="absolute" cornerRadius="4">
+		<mx:Tree x="10" y="10" height="338" id="treeAccounts" width="335" verticalAlign="middle" 
+		 showRoot="false" labelField="@Label" itemClick="selectedAcct(event)" textAlign="left"/>
+	<mx:Script>
+	<![CDATA[
+	import mx.managers.PopUpManager;
+	import mx.collections.ArrayCollection;
+	import mx.rpc.events.ResultEvent;
+    import mx.rpc.events.FaultEvent;
+    import mx.controls.Alert;
+    import popUpMemberInvoice;
+    
+    [Bindable]
+	public var acChgType:ArrayCollection;
+	public var puClubID:int;
+	public var puAcct:XML;	
+	public var callBack:Function;
+	private function CFCerror(e:FaultEvent):void
+	{
+		Alert.show(e.fault.faultString, "Server Error");	
+	}
+	private function popUpInit():void
+	{
+		PopUpManager.centerPopUp(this);
+		treeAccounts.dataProvider = puAcct;
+	}
+	private function removeDetail():void
+	{
+		PopUpManager.removePopUp(this);
+	}
+	private function selectedAcct(e:Event):void
+	{
+		id:String;
+		id = e.currentTarget.selectedItem.@IsPosting;
+		if(id == "Y")
+		{
+			callBack(e.currentTarget.selectedItem);
+			removeDetail();
+		}
+	}
+	]]>
+	</mx:Script>	
+</mx:TitleWindow>

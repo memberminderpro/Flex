@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml">
+	<mx:Script>
+        <![CDATA[
+        	import flexunit.flexui.controls.right.SelectedTestCaseForm;           
+            // Define a property for returning the new value to the cell.
+            [Bindable]
+            public var returnAttd:Boolean = false;
+            private function newValue(e:Event):void
+            {
+            	data.boolAttended = e.currentTarget.selected;
+            	//data.boolAttended = attendedChk.selected;
+            	returnAttd = e.currentTarget.selected;
+            	//TODO check if we should change view to hide checkbox
+            	render();
+            	
+            	data.enterEvent();
+            	this.validateDisplayList();
+            	
+            }
+            private function render():void {
+            		if(data.GuestCode > 0 ) {
+            			attendedChk.label = "G";
+            		} else if(data.Excused) {
+            			attendedChk.label = "X";
+            		} else if(data.Makeup) {
+            			attendedChk.label = "M";
+            		} else if(data.boolAttended) {
+            			attendedChk.label = "Y";
+            		} else {
+            			attendedChk.label = "-";
+            		}	
+            		super.invalidateDisplayList();
+            }
+            private function enterKey(e:KeyboardEvent):void
+            {
+            	if(e.keyCode == Keyboard.ENTER)
+            	{
+            		data.enterEvent();
+            	}
+            }
+        ]]>
+    </mx:Script>
+
+ 	<mx:Button id="attendedChk" toggle="true" label="-" valueCommit="newValue(event)" />
+
+</mx:VBox>

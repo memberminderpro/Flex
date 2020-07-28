@@ -1,0 +1,1245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Invoice.mxml 
+-->
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" 
+	layout="absolute" 
+	backgroundGradientAlphas="[1.0, 1.0]" 
+	backgroundGradientColors="[#E8E8E8, #FFFFFF]" 
+	creationComplete="initCB()" 
+	xmlns:ns1="components.*" 
+	xmlns:view="com.infusion.invoice.views.*" 
+	xmlns:control="com.infusion.invoice.commands.*" 
+	xmlns:components="com.infusion.invoice.views.components.*"
+	xmlns:services="com.infusion.invoice.services.*"
+	height="100%" xmlns:actionButtons="com.infusion.invoice.views.components.actionButtons.*" 
+	xmlns:chargeItemsPanel="com.infusion.invoice.views.components.chargeItemsPanel.*" xmlns:memberInvoices="com.infusion.invoice.views.components.memberInvoices.*">
+	
+	<!-- shifting to Cairngorm.  This should be in app root -->
+	<services:Services id="services"/>
+	<control:Controller id="controller" /> 
+	
+	
+	<mx:states>
+			<mx:State name="orphanstate">
+		    <mx:SetProperty target="{memberTab}" name="enabled" value="true"/>
+			<mx:AddChild relativeTo="{memberTab}" position="lastChild">
+				<mx:TabNavigator x="408" y="90" width="260" height="365">
+					<mx:Canvas label="Current" width="100%" height="100%" id="canvas3">
+					</mx:Canvas>
+					<mx:Canvas label="Former" width="100%" height="100%" id="canvas4">
+						<mx:DataGrid x="10" y="0" width="238" height="322" id="orphansDataGrid" dataProvider="{orphans}"
+							 itemClick="actionMemberNotEditable(event)" >
+								<mx:columns>
+										<mx:DataGridColumn headerText="User Name" width="150" dataField="UserName"/>
+										<mx:DataGridColumn headerText="Amount" textAlign="center" dataField="Amount"/>
+								</mx:columns>
+						</mx:DataGrid>
+						
+					</mx:Canvas>
+				</mx:TabNavigator>
+			</mx:AddChild>
+			<mx:SetProperty target="{dgMemberChrg}" name="x" value="10"/>
+			<mx:SetProperty target="{dgMemberChrg}" name="y" value="0"/>
+			<mx:SetProperty target="{dgMemberChrg}" name="height" value="322"/>
+			<mx:SetProperty target="{dgMemberChrg}" name="width" value="238"/>
+			<mx:RemoveChild target="{dgMemberChrg}"/>
+			<mx:AddChild relativeTo="{canvas3}" position="lastChild" target="{dgMemberChrg}"/>
+			
+			<mx:SetProperty target="{RO_MemberIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{MemberIsSelected}" name="visible" value="true"/>
+			<mx:SetProperty target="{RO_ItemIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{ItemIsSelected}" name="visible" value="true"/>
+		</mx:State>
+
+
+		<mx:State name="orphanstate_noteditable" basedOn="orphanstate">
+			<mx:SetProperty target="{memberTab}" name="enabled" value="true"/>
+			
+			<mx:SetProperty target="{chkbxFormer}" name="enabled" value="false"/>
+			<mx:SetProperty target="{btnClearAll}" name="enabled" value="false"/>
+			<mx:SetProperty target="{btnSelectAll}" name="enabled" value="false"/>
+			<mx:SetProperty target="{dgMember}" name="editable" value="false"/>
+			<mx:SetProperty target="{dgMemberChrg}" name="editable" value="false"/>
+			<mx:SetProperty target="{dgSelCharge}" name="editable" value="false"/>
+			<mx:SetStyle target="{dgSelCharge}" name="color" value="#8B8B8B"/>
+			<mx:SetStyle target="{canvas3}" name="color" value="#8B8B8B"/>
+			<mx:SetStyle target="{dgMember}" name="color" value="#8B8B8B"/>
+			<mx:SetProperty target="{formerDate}" name="enabled" value="false"/>
+			<mx:SetProperty target="{dgMemberChrg}" name="enabled" value="true"/>
+			<mx:SetProperty target="{dgSelCharge}" name="enabled" value="true"/>
+			<mx:SetProperty target="{dgMember}" name="enabled" value="true"/>
+			
+			<mx:SetProperty target="{RO_MemberIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{MemberIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{RO_ItemIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{ItemIsSelected}" name="visible" value="false"/>
+			<mx:AddChild relativeTo="{memberTab}" position="lastChild">
+				<mx:Image x="572" y="68" source="{ImgOrangeFlag}"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{memberTab}" position="lastChild">
+				<mx:Label x="592" y="66" text="READ ONLY" fontWeight="bold" color="#C16D00" fontSize="13" toolTip="Invoice was posted, no further changes allowed"/>
+			</mx:AddChild>
+			<mx:SetStyle target="{tabInvoice}" name="backgroundDisabledColor"/>
+			<mx:SetStyle target="{tabInvoice}" name="themeColor"/>
+		</mx:State>
+
+		<mx:State name="member">
+			<mx:SetProperty target="{memberTab}" name="enabled" value="true"/>
+			<mx:SetProperty target="{RO_MemberIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{MemberIsSelected}" name="visible" value="true"/>
+			<mx:SetProperty target="{RO_ItemIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{ItemIsSelected}" name="visible" value="true"/>
+			<mx:SetStyle target="{vbox1}" name="verticalAlign" value="top"/>
+			<mx:SetStyle target="{vbox1}" name="verticalGap" value="0"/>
+			
+			<!--mx:SetProperty target="{invDate}" name="text" value="{invoiceDate}"/>
+			<mx:SetProperty target="{invDueDate}" name="text" value="{invoiceDueDate}"/>
+			<mx:SetProperty target="{invName}" name="text" value="{invoiceGroup}"/>
+			<mx:SetProperty target="{invPeriod}" name="text" value="{invoicePeriod}"/-->
+		</mx:State>
+		
+		<mx:State name="member_noteditable" basedOn="member">
+		
+			<mx:SetProperty target="{memberTab}" name="enabled" value="true"/>
+			<mx:SetProperty target="{btnSelectAll}" name="enabled" value="false"/>
+			<mx:SetProperty target="{btnClearAll}"  name="enabled" value="false"/>
+			<mx:SetProperty target="{chkbxFormer}"  name="enabled" value="false"/>
+			
+			<mx:SetProperty target="{dgMember}"     name="editable" value="false"/>
+			<mx:SetProperty target="{dgMemberChrg}" name="editable" value="false"/>
+			<mx:SetProperty target="{dgSelCharge}"  name="editable" value="false"/>
+			<mx:SetProperty target="{dgMember}"     name="enabled" value="true"/>
+			<mx:SetProperty target="{dgSelCharge}"  name="enabled" value="true"/>
+			
+			<mx:SetStyle target="{dgMember}"        name="color" value="#8B8B8B"/>
+			<mx:SetStyle target="{dgMember}" name="borderColor" value="#B7BABC"/>
+			<mx:SetStyle target="{dgSelCharge}" name="borderColor" value="#B7BABC"/>
+			<mx:SetStyle target="{dgSelCharge}" name="color" value="#8B8B8B"/>
+			<mx:SetStyle target="{dgMemberChrg}" name="color" value="#8B8B8B"/>
+			<mx:SetProperty target="{formerDate}" name="enabled" value="false"/>
+			<mx:SetProperty target="{dgMemberChrg}" name="enabled" value="true"/>
+			<mx:SetProperty target="{RO_MemberIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{MemberIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{RO_ItemIsSelected}" name="visible" value="false"/>
+			<mx:SetProperty target="{ItemIsSelected}" name="visible" value="false"/>
+			<mx:AddChild relativeTo="{memberTab}" position="lastChild">
+				<mx:Image x="572" y="68" source="{ImgOrangeFlag}"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{memberTab}" position="lastChild">
+				<mx:Label x="592" y="66" text="READ ONLY" fontWeight="bold" color="#C16D00" fontSize="13" toolTip="Invoice was posted, no further changes allowed"/>
+			</mx:AddChild>
+			
+		</mx:State>
+
+
+	</mx:states>
+	<mx:Style>
+		global 
+		{ modalTransparency: 0.0; 
+		  modalTransparencyBlur: 0.0;}
+	</mx:Style>
+    <mx:TabBar  itemClick="tabChg(event)" id="tabInvoice" dataProvider="viewStack" tabStyleName="myTabStyle" barColor="#FFFFFF"/>
+        <mx:ViewStack id="viewStack" x="0" y="22" width="1023" height="491" borderColor="#E8E8E8" backgroundColor="#FFFFFF" >
+
+		<mx:Canvas label="Invoice Groups" width="100%" height="100%" id="invoiceGroupTab" backgroundColor="#FFFFFF" 
+			borderColor="#FFFFFF" borderStyle="solid" borderThickness="9"  enabled="true"
+			icon="{ImgInvoiceGroups}">
+			<!--mx:Panel x="0" y="0" width="100%" height="100%" layout="absolute" id="invoice" title="Invoice List" borderColor="#CCFFFF" backgroundColor="#CCFFFF"-->
+				<mx:Canvas label="Invoices" width="100%" height="100%" borderColor="#FFFFFF" backgroundColor="#FFFFFF" borderThickness="9" borderStyle="solid">
+					<mx:DataGrid x="10" y="55" width="878" height="100%" id="dgInvoice" 
+					 doubleClickEnabled="true" toolTip="Click Edit For Detail..."
+					 itemClick="handleInvoiceGroupSelected(event)" dataProvider="{_model.invoiceGroupsList}" itemDoubleClick="selectInvoiceAndView(event)">
+						<mx:columns>
+							<mx:DataGridColumn dataField="InvoiceGrp" headerText="Invoice Group #" width="120" />
+							<mx:DataGridColumn dataField="Description" headerText="Description" width="225" />
+							<mx:DataGridColumn dataField="Period" headerText="Period" width="100" />
+							<mx:DataGridColumn dataField="fmtInvoiceDate" headerText="Invoice Date" width="120" textAlign="center"/>
+							<mx:DataGridColumn dataField="fmtDueDate" headerText="Due Date" width="120" textAlign="center"/>
+							<mx:DataGridColumn dataField="fmtDatePosted" headerText="Date Posted" width="120" textAlign="center"/>
+							<mx:DataGridColumn dataField="Amount" headerText="Amount" width="100" textAlign="right"/>
+						</mx:columns>
+					</mx:DataGrid>
+						<mx:HBox x="10" y="0" width="335" height="50" borderStyle="inset" 
+							horizontalAlign="center" verticalAlign="middle" horizontalGap="8" id="hbox1">
+							<mx:Button id="addInvoiceGroup" label="Add" click="handleInvoiceGroupCreate(event)" 
+								width="70" enabled="true" fillAlphas="[1.0, 1.0]" fillColors="[#FBCD2E, #CFB760]"/>
+							<mx:Button id="editInvoiceGroup" label="Edit" click="handleInvoiceGroupEdit(event)" 
+								width="70" enabled="{_model.selectedInvoiceGroup != null}" />
+							<mx:Button id="deleteInvoiceGroup" label="Delete" click="handleInvoiceGroupDelete(event)"
+								cornerRadius="3" width="70" fillAlphas="[1.0, 1.0]" 
+								fillColors="[#F81818, #F4AEAE]" enabled="{_model.selectedInvoiceGroup != null}"  />
+							<mx:Spacer/>
+						</mx:HBox>
+						<mx:TextArea id="testTx" maxChars="100" enabled="true" x="353" y="0" height="47" width="324" editable="false"/>
+						<mx:Label x="685" y="1" text="{_model.appVersion}" id="lblVersion" enabled="true"/>
+					</mx:Canvas>
+			<!--/mx:Panel-->
+		</mx:Canvas>
+		<chargeItemsPanel:ChargeItemsView id="chargesTab" icon="{ImgMoney}" label="Charges" _model="_model"/>
+		<memberInvoices:MembersChargesView id="membersTab" icon="{ImgMembers}" label="Members" _model="_model"/>
+	</mx:ViewStack>
+	<!--/mx:TabNavigator-->
+	<mx:DateFormatter id="invoiceFormat" formatString="MMM DD, YYYY"/>
+	<mx:Style>
+        .myFirstTabStyle {
+            font-style:italic
+        }
+       
+        .myTabStyle {
+            backgroundColor:#ffffff;
+            font-style:bold
+        }
+
+    </mx:Style>
+	<mx:CurrencyFormatter id="usdFormat" precision="2" 
+        currencySymbol="$" decimalSeparatorFrom="."
+        decimalSeparatorTo="." useNegativeSign="true" 
+        useThousandsSeparator="true" alignSymbol="left"/>
+	<!-- mx:RemoteObject
+    	id="remoteCFC" 
+    	destination="ColdFusion"
+    	result="remotingCFCHandler(event)"
+    	fault="remoteError(event)"/--> 
+    <!--mx:RemoteObject
+    	id="invoiceCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="invoiceHandler(event)"
+    	fault="remoteError(event)"/-->
+    <!--mx:RemoteObject
+    	id="invoiceItemCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="invoiceItemHandler(event)"
+    	fault="remoteError(event)"/-->  	
+    <!--mx:RemoteObject
+    	id="chargeTypeCFC" 
+    	destination="ColdFusion"
+    	result="chargeTypeCFCHandler(event)"
+    	fault="remoteError(event)"/-->
+    <!--mx:RemoteObject
+    	id="chargeItemCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="chargeItemCFCHandler(event)"
+    	fault="remoteError(event)"/-->
+    <!--mx:RemoteObject
+    	id="accountCFC" 
+    	destination="ColdFusion"
+    	result="accountCFCHandler(event)"
+    	fault="remoteError(event)"/-->
+   	<!--mx:RemoteObject
+    	id="memberCFC" showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="memberCFCHandler(event)"
+    	fault="remoteError(event)"/-->
+    <!--mx:RemoteObject
+    	id="memberType"
+    	destination="ColdFusion"
+    	result="memberTypeHandler(event)"
+    	fault="remoteError(event)"/-->
+	<mx:Script>
+		<![CDATA[
+			import com.infusion.invoice.views.components.invoiceGroup.popUpInvoiceGroup;
+			import com.infusion.invoice.model.dtos.*;
+			import com.infusion.invoice.events.*;
+			import com.infusion.invoice.services.Services;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.infusion.invoice.model.AppModelLocator;
+			import com.infusion.invoice.utils.InvConstants;
+		import components.ChargePanel;
+		import components.ChargePanel2;
+		import InfusionGrp.MemType;
+		import InfusionGrp.Recurring;
+		import InfusionGrp.MemberClass;
+		import InfusionGrp.GL_Invoice;
+		import InfusionGrp.InvoiceItem;
+		import InfusionGrp.InvoiceItemDAO;
+		import InfusionGrp.InvoiceClass;
+		import components.DateBar;
+		import components.DGmemType;
+		import components.PostOrPrint;
+		import popUpMemberInvoice;
+		//import popUpAccounts;
+		
+		import mx.events.IndexChangedEvent;
+		import flash.events.TextEvent;
+		import mx.rpc.AsyncToken;
+		import mx.collections.*;
+		import mx.managers.PopUpManager;
+		import mx.rpc.events.ResultEvent;
+    	import mx.rpc.events.FaultEvent;
+    	import mx.rpc.remoting.RemoteObject;
+    	import mx.controls.Alert;
+    	import mx.messaging.messages.RemotingMessage;
+    	import mx.events.DataGridEvent;
+    	import mx.events.ListEvent;
+    	import mx.events.DataGridEventReason;
+		import mx.controls.listClasses.IDropInListItemRenderer;
+		import mx.events.ItemClickEvent;
+		import com.adobe.serialization.json.JSON;
+		
+		import components.NameLabelBoldSelReadOnlyRenderer;
+		
+		//converting to Cairngorm
+		[Bindable] public var _model:AppModelLocator = AppModelLocator.getInstance();
+		//public var services:Services;
+		
+		//Not converted
+		public var _invoice:Invoice;
+    	public var bUpdate:Boolean;
+    	public var popChargeActive:Boolean;
+		[Bindable] 	public var arChargeItem:ArrayCollection = new ArrayCollection();
+		[Bindable]	public var acCMTZeroAmt:ArrayCollection; 
+		[Bindable]	public var arMemberCharge:Array = [];
+		[Bindable]	public var arMemberList:ArrayCollection = new ArrayCollection(); //Array of MemberClass
+		[Bindable]	public var orphans:ArrayCollection = new ArrayCollection();
+		public var arTypeArray:Array;
+		public var acctID:int;
+		public var acctName:String;
+		private var selInvoice:Object; 	// Current selected Invoice;
+		private var objDistrict:Object = {District:region};
+		public var popInvoice:popUpInvoiceGroup;
+		public var popMember:popUpMemberInvoice;
+		[Bindable]	public var clubID:int = 6128;		// default for testing
+		[Bindable]
+		public var argDate:Date = new Date;	// default today
+		public var region:int = 7710;
+		public var dsn:String = "Rotary";
+		[Bindable]
+		public var _endPoint:String = "http://76.12.191.145//flex2gateway"
+		public var _ci:ChargeItem;					// Charge Item Object for sending
+		public var _SelChargeItem:ChargeItem;		// Last selected ChargeItem;
+		[Bindable]
+		private var invoicePeriod:String = "";
+		[Bindable]
+		private var invoiceDate:Date = new Date();
+		[Bindable]
+		private var invoiceDueDate:Date = new Date();
+		[Bindable]
+		private var invoiceIsPosted:String = "";
+		[Bindable]
+		private var invoiceGroup:String = "";
+
+		private var memInvoice:Object;
+		private var popPost:popUpPost, popDeleteConfirm:popUpPost;
+		private var debugLevel:int;
+		[Bindable]
+		public var acDate:ArrayCollection;
+		
+		private var orphanWarningDone:Boolean = false;
+		
+		[Bindable]
+            [Embed(source="assets/flag_orange.png")]
+            private var ImgOrangeFlag:Class;
+
+            [Bindable]
+            [Embed(source="assets/group.png")]
+            private var ImgMembers:Class;
+
+            [Bindable]
+            [Embed(source="assets/money.png")]
+            private var ImgMoney:Class;
+            
+            [Bindable]
+            [Embed(source="assets/table_multiple.png")]
+            private var ImgInvoiceGroups:Class;
+
+		
+		private function initCB():void
+		{
+			var s:String;
+			var _dsn:String;
+			
+			_invoice = this;			// Save reference
+        	for (var i:String in Application.application.parameters) 
+        	{
+           		s += i + ":" + Application.application.parameters[i] + "\n";
+        	}
+        	//Alert.show(s);
+        	_dsn = Application.application.parameters.dsn;
+        	if(_dsn != null)	// Production
+        	{
+        		dsn = _dsn;
+        		_endPoint = Application.application.parameters.endpoint;
+        		_endPoint += "/flex2gateway";
+        		clubID = Application.application.parameters.clubID;
+        		region = Application.application.parameters.district;
+
+        		debugLevel = Application.application.parameters.DebugLevel;
+        		testTx.text = "\nProduction";
+        		objDistrict.District = region;
+        		
+        		//Cairngorm
+        		_model.destination = _dsn;
+        		_model.endPoint = _endPoint;
+        		_model.clubID = Application.application.parameters.clubID;
+        		_model.districtID = Application.application.parameters.district;
+        		//services = new Services();
+        		//services.destination = _model.destination;
+        		//services.endpoint =    _model.endPoint;
+        	}
+        	else
+        	{
+        		debugLevel = 1;
+        		testTx.text = "\nUsing Defaults";
+        	}
+        	testTx.text += "\nDSN: " + dsn;
+        	testTx.text += "\nEndPoint: " + _model.endPoint;
+        	testTx.text += "\nClubID: " + _model.clubID;
+        	testTx.text += "\nDistrict: " + _model.districtID;
+        	testTx.text += "\nDebug: " + debugLevel;
+        	testTx.visible = debugLevel > 0 ? true : false;
+			
+			// Get data Phase 1 data
+			//TW:cairngorm memberType.Pick2(region,"N");
+			var memberTypesEvent:GetMemberTypesEvent 
+				= new GetMemberTypesEvent(_model.districtID);
+			CairngormEventDispatcher.getInstance().dispatchEvent(memberTypesEvent);
+			
+			//TW:cairngorm  remoteCFC.Lookup(objDistrict);
+			//Moved down
+			
+			//var args:Object = {ClubID:objClub, Override:"N", ExclDues:"Y"};
+			//TW:cairngorm
+			//accountCFC.PickXML(objClub);//args);		//Pass Club ID
+			var accountsEvent:GetAccountsXMLEvent 
+				= new GetAccountsXMLEvent(_model.clubID);
+			CairngormEventDispatcher.getInstance().dispatchEvent(accountsEvent);
+			
+			//TW:cairngorm chargeTypeCFC.Lookup();
+			bUpdate = false;
+			
+			tabInvoice.selectedIndex = 2;
+
+			//TODO make main call when move done
+			onCreateComplete();
+		}
+		
+		public function onCreateComplete():void {
+			//ONLY FOR TESTING!  MUST REMOVE!!
+			//TODO TW:cairngorm clubMain.remoteCFC.Create(_invoice, "N");		// Continue on Error
+			var _invoice:InvoiceGroup = new InvoiceGroup();
+			_invoice.ClubID = _model.clubID;
+			_invoice.AccountID = _model.districtID;
+			_invoice.Description = "Tarah West: Testing";
+			_invoice.InvoiceDate = new Date();
+			
+			var createInvoiceGroupEvent:CreateInvoiceGroupEvent
+				= new CreateInvoiceGroupEvent(_invoice);
+			//CairngormEventDispatcher.getInstance().dispatchEvent(createInvoiceGroupEvent);
+			
+			//Get all Invoice groups
+			//TW:cairngorm remoteCFC.Lookup(objDistrict);
+			var invGrpEvent:GetAllInvoiceGroupsForClubEvent 
+				= new GetAllInvoiceGroupsForClubEvent(_model.districtID);
+			CairngormEventDispatcher.getInstance().dispatchEvent(invGrpEvent);
+			
+			//TW:cairngorm chargeTypeCFC.Lookup();
+			var chargeTypesEvent:GetChargeTypesEvent 
+				= new GetChargeTypesEvent();
+			CairngormEventDispatcher.getInstance().dispatchEvent(chargeTypesEvent);
+			
+
+		}
+		private function afterMemberTab():void {
+			tabInvoice.selectedIndex = 0;
+		}
+
+
+		/*
+			Call back function from popUpAccounts - used to save selection
+		* TODO TW:cairngorm fire account selected event
+		public function saveAcct(acct:XML):void
+		{
+			chargePanel.inAccount.text = acct.@Label;
+			acctName = acct.@Label;
+			acctID = acct.@ID;
+			//btnSaveCharge.enabled = true;
+			chkInput();
+		}
+		*/
+		private function setToday():void
+		{
+			formerDate.selectedDate = new Date();
+		}
+		private function remoteError(e:FaultEvent):void
+ 		{
+ 			Alert.show(e.fault.toString(), "Server Error");	
+ 		}
+ 		/*
+ 			InvoiceGrpDAO - result handler
+ 		* Cairngorm *
+ 		private function remotingCFCHandler(e:ResultEvent):void
+    	{
+    		var i:int, len:int;
+    		var ac:ArrayCollection;
+    		var ar:Array;
+    		var _invoice:InvoiceClass;
+    		var _selInvoice:InvoiceClass;
+    		
+    			if(dgInvoice.selectedItem != null)
+    			{
+    				_selectedID = dgInvoice.selectedItem.InvoiceGrpID;
+    			}
+    			else
+    			{
+    				_selectedID = 0;
+    			}
+    			ac = e.result as ArrayCollection;
+    			len = ac.length;
+    			dpInvoice = new ArrayCollection;
+    			for(i=0; i<len; i++)
+    			{
+    				_invoice = new InvoiceClass(ac[i]);
+    				if(_invoice.InvoiceGrpID == _selectedID)
+    				{
+    					_selInvoice = _invoice;
+    				}
+    				dpInvoice.addItem(_invoice);
+    			}
+    			dgInvoice.invalidateList();
+    			if(_selectedID > 0)
+    			{
+    				dgInvoice.selectedItem = _selInvoice;
+    			}
+    		}
+    		else
+    		{
+    			remoteCFC.Lookup(objDistrict);	// Refresh Display
+    			btnEdit.enabled = false;
+    			btnDel.enabled = false;
+    		}
+    	}
+    	*/
+
+    	/*
+    		Processes list of Charge Items in Database
+    	*
+    	private function chargeItemCFCHandler(e:ResultEvent):void
+    	{
+    		var i:int, len:int, id:int;
+    		var ci:ChargeItem;
+    		var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		var args:Object = {InvoiceGrpID:invoiceGrpID};
+    		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		if(msgOp == "Lookup")
+    		{
+    			len = e.result.length;
+    			arChargeItem.removeAll();
+    		
+    			for(i=0; i<len; i++)
+    			{
+    				ci = new ChargeItem(e.result[i]);
+    				ci.ItemChargeType = findChargeType(ci.ItemTypeID);
+    				ci.ItemDisplayType = findDisplayType(ci.ItemTypeID);
+    				ci.dsn = dsn;
+    				ci.endPoint = _endPoint;
+    				
+    				if(ci.ItemTypeID == perMemberType || 
+    					ci.ItemTypeID == perMeetingAttendedMemberType ||
+    					ci.ItemTypeID == perMeetingMissedMemberType)
+    				{
+    					ci.ItemMemberTypeLookup();
+    				}
+    				arChargeItem.addItem(ci);
+    			}
+    			if(dgCharge != null)
+    			{
+    				dgCharge.invalidateList();
+    			}
+    		}
+    		else if(msgOp == "Create" || msgOp == "Update")
+    		{
+    			
+    			
+    			if(msgOp == "Create")
+    			{
+    				//newCharge();
+    				_SelChargeItem.ItemChargeID = e.result as int;
+    				//TODO Why not on Update too?
+    			}
+
+    			if(_SelChargeItem.ItemTypeID == perMemberType || 
+    				_SelChargeItem.ItemTypeID == perMeetingAttendedMemberType ||
+    				_SelChargeItem.ItemTypeID == perMeetingMissedMemberType)
+    			{
+    				_SelChargeItem.CallBack = dgRefresh;
+    				_SelChargeItem.ItemSaveQ(msgOp);
+    			}
+    			if(_SelChargeItem.ItemTypeID == perMemberRecurring)
+    			{
+    				id = e.result as int;
+    				_SelChargeItem.CallBack = dgRefresh;
+    				if(msgOp == "Create")
+    				{
+    					_SelChargeItem.RecurringSaveQ(chargePanel.acMemRecurring, id);
+    				}
+    				if(msgOp == "Update")
+    				{
+    					_SelChargeItem.RecurringUpdateQ(chargePanel.acMemRecurring, id);
+    				}
+    			}
+    			if(_SelChargeItem.ItemTypeID == perMemberSelected)
+    			{
+    				id = e.result as int;
+    				_SelChargeItem.CallBack = dgRefresh;
+    				if(msgOp == "Create")
+    				{
+    					_SelChargeItem.MemSelectedSaveQ(chargePanel.acMemSelected, id);
+    				} else if(msgOp == "Update")
+    				{
+    					_SelChargeItem.MemSelectedUpdateQ(chargePanel.acMemSelected, id);
+    				} else {
+    					Alert.show("Unknown message operation:"+msgOp);
+    				}
+ 
+    			}
+    			chargeItemCFC.Lookup(objClub);
+    		}
+    		if(msgOp == "Delete")
+    		{
+    			chargeItemCFC.Lookup(objClub);	// Refresh List
+    		}
+    		invoiceItemCFC.LookupChargeItems(args);
+    	}
+    	/*
+    		Call back function to refresh datagrid
+    	*/
+    	public function dgRefresh():void
+    	{
+    		//TW:cairngorm chargeItemCFC.Lookup(objClub);
+			var chargeItemsEvent:GetAllChargeItemsEvent 
+				= new GetAllChargeItemsEvent(_model.districtID);
+			CairngormEventDispatcher.getInstance().dispatchEvent(chargeItemsEvent);
+    	}
+    	private function memberTypeHandler(e:ResultEvent):void
+		{
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		var i:int, len:int;
+    		var ac:ArrayCollection;
+    		var mt:MemType;
+    		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+
+    		if(msgOp == "Pick2")
+    		{
+    			ac = e.result as ArrayCollection;
+    			len = ac.length;
+    			acCMTZeroAmt = new ArrayCollection;
+    			
+    			for(i=0; i<len; i++)
+    			{
+    				mt = new MemType(ac[i]);
+    				mt.Amount = 0;
+    				acCMTZeroAmt.addItem(mt);
+    			}
+    			
+    			//By Default, load up all members who were members on Invoice Create Date
+    			//var args:Object = {ClubID:clubID,Override:"Y",TermDate:selInvoice.InvoiceDate};
+    			//TW:cairngorm memberCFC.getClubMembers(objClub);			// Now get members
+    			var getClubMembersEvent:GetClubMembersEvent
+					= new GetClubMembersEvent(_model.clubID, true, _model.selectedInvoiceGroup.InvoiceDate);
+				CairngormEventDispatcher.getInstance().dispatchEvent(getClubMembersEvent);
+    		}
+		}
+    	private function updateEvent(e:Event):void
+    	{
+    		popMember.updateAmount();
+    	}
+    	
+    	private function selectInvoiceAndView(e:Event):void {
+    		handleInvoiceGroupSelected(e);
+    		tabInvoice.selectedIndex = 2;
+    	}
+
+		/*
+			Here from dgInvoice - itemClick
+		*/
+		private function handleInvoiceGroupSelected(e:Event):void
+		{
+			//args.InvoiceGrpID = selInvoice.InvoiceGrpID;
+			//TW:cairngorm invoiceCFC.View(args);
+			//TW:cairngorm chargeItemCFC.create(chargeItem);
+			var viewInvoiceEvent:ViewInvoiceEvent
+				= new ViewInvoiceEvent(_model.selectedInvoiceGroup.InvoiceGrpID);
+			CairngormEventDispatcher.getInstance().dispatchEvent(viewInvoiceEvent);
+			
+			_model.selectedInvoiceGroup = e.currentTarget.selectedItem;
+			if(selInvoice == null) {
+				Alert.show("Null invoice selected!"); 
+				return;
+			}
+			setViewState("member");
+
+			//TW:cairngormTODOinvoiceItemCFC.LookupChargeItems(args);
+			//setViewState(currentState); //on load of invoice into members tab - if posted, make read-only
+		}
+
+		/* 
+			Call back function from popUpMemberInvoice
+			called when Invoice is saved
+		*/
+		public function updateCharges():void
+		{
+			//var args:Object = {InvoiceGrpID:invoiceGrpID};
+			//TW:cairngorm invoiceCFC.Lookup(args);
+			var viewInvoiceEvent:ViewInvoiceEvent
+				= new ViewInvoiceEvent(_model.selectedInvoiceGroup.InvoiceGrpID);
+			CairngormEventDispatcher.getInstance().dispatchEvent(viewInvoiceEvent);
+			//TW:cairngorm remoteCFC.Lookup(objDistrict);
+			var getAllInvoiceGroups:GetAllInvoiceGroupsForClubEvent
+				= new GetAllInvoiceGroupsForClubEvent(_model.districtID);
+			CairngormEventDispatcher.getInstance().dispatchEvent(getAllInvoiceGroups);
+					
+		}
+		public function findChargeType(ct:int):String
+		{
+			var i:int, len:int;
+			var type:String;
+			len = _model.chargeTypesList.length;
+    		for(i=0; i<len; i++)
+    		{
+    			if(ct == _model.chargeTypesList[i].ChargeTypeID)
+    			{
+    				type = _model.chargeTypesList[i].ChargeType;
+    				break;
+    			}
+			}
+			return type;
+		}
+		// Get the display type
+		public function findDisplayType(ct:int):int
+		{
+			var i:int, len:int;
+			var type:int;
+			len = _model.chargeTypesList.length;
+    		for(i=0; i<len; i++)
+    		{
+    			if(ct == _model.chargeTypesList[i].ChargeTypeID)
+    			{
+    				type = _model.chargeTypesList[i].TypeID;
+    				break;
+    			}
+			}
+			return type;
+		}
+		
+
+		private function yesNo(obj:Object, obj1:Object):String
+		{
+			var s:String;
+			if(obj.IsPosted == "Y")
+			{
+				s = "Yes";
+			}
+			if(obj.IsPosted == "N")
+			{
+				s = "No";
+			}
+			return s;
+		}
+		private function handleInvoiceGroupCreate(e:Event):void
+		{
+			popInvoice = popUpInvoiceGroup(PopUpManager.createPopUp(this, popUpInvoiceGroup, true));
+			var newInvoiceGroup:InvoiceGroup = new InvoiceGroup();
+			
+			newInvoiceGroup.ClubID = _model.clubID;
+			newInvoiceGroup.AccountID = _model.districtID;
+			popInvoice.boundInvoiceGroup = newInvoiceGroup;
+		}
+		private function handleInvoiceGroupEdit(e:Event):void
+		{
+			popInvoice = popUpInvoiceGroup(PopUpManager.createPopUp(this, popUpInvoiceGroup, true));
+			popInvoice.boundInvoiceGroup = _model.selectedInvoiceGroup;
+		}
+		
+		private function handleInvoiceGroupDelete(e:Event):void
+		{
+			if(_model.selectedInvoiceGroup == null) {
+				trace("ERROR: ["+this+"] Cannot delete null InvoiceGroup.");
+				return;
+			}
+			
+			//Prompt to be sure
+			var deleteInvoiceGroupEvent:DeleteInvoiceGroupEvent = new DeleteInvoiceGroupEvent(_model.selectedInvoiceGroup);
+			
+		}
+		
+		private function MemberBtn(e:Event):void
+		{
+			var action:String;
+			action = e.currentTarget.id;
+			popMember = popUpMemberInvoice(PopUpManager.createPopUp(this, popUpMemberInvoice, true));
+			switch(action)
+			{
+				case "btnMemView":
+					popMember.currentState = "View";
+					break;
+				case "btnMemEdit":
+					popMember.currentState = "Edit";
+					break;
+				case "btnMemAdd":
+					popMember.currentState = "Add";
+					break;
+				case "btnMemDel":
+					popMember.currentState = "Delete";
+					break;
+				default:
+					break;
+			}
+		}
+		
+		
+		private function setViewState(s:String):void {
+			if(s == null) {
+				s = "member";
+			}
+			//Alert.show("Set View State "+s+" is posted? "+invoiceIsPosted);
+			//strip off the _noteditable so we don't add it multiple times
+			var idx:int = s.indexOf("_noteditable");
+			if(idx >= 0) {
+				s = s.substr(0, idx);
+			}
+			if(invoiceIsPosted=="Y") {
+				currentState = s+"_noteditable";
+			} else {
+				currentState = s;
+			
+			}
+			validateNow();
+				
+		}
+		/* 
+			Special processing to get quantity for Meetings
+		*/
+		private function addChargeGrp(ci:ChargeItem, len:int):void
+		{
+			/* TW:cairngorm
+			var i:int, ct:int;
+			var cg:ChargeGroup;
+			ct = 0;	
+			
+			for(i=0; i<len; i++)
+			{
+				if(ct == 0)
+				{	
+					cg = new ChargeGroup(ci);
+					cg.dsn = dsn;
+					cg.endPoint = _endPoint;
+					cg.dataGrid = dgMemberChrg;
+				}
+				cg.addGroupMember(arMemberCharge[i]);
+				ct++;					// Increment number in Charge Group
+				if(ct > 9)				// Max Per Group
+				{
+					ct = 0;
+					cg.sendGroup(ci.ItemChargeID);
+					cg = new ChargeGroup(ci);
+					cg.dsn = dsn;
+					cg.endPoint = _endPoint;
+					cg.dataGrid = dgMemberChrg;
+				}
+				if(i == len-1 && ct != 0)		// Partials
+				{
+					cg.sendGroup(ci.ItemChargeID);
+				}
+			}
+			*/
+		}
+		/*
+    		invoiceItemHandler - remote Object result
+    		from invoiceItemCFC.
+    	*/
+    	private function invoiceItemHandler(e:ResultEvent):void
+    	{
+    		var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		var args:Object = {InvoiceGrpID:_model.selectedInvoiceGroup.InvoiceGrpID};
+    		var ciID:int, i:int, j:int, rlen:int, len:int;
+    		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		if(msgOp == "AddInvoiceItem" || msgOp =="DeleteInvoiceItem")
+    		{
+    			dgMemberChrg.validateNow();	// Update list
+    			//TW:cairngormTODO invoiceCFC.Lookup(args);
+    		}
+    		
+    		if(msgOp == "LookupChargeItems")	// Show selected items
+    		{
+    			if(arChargeItem == null) {return};
+    			
+    			len = arChargeItem.length;
+    			rlen = e.result.length;
+    			// Clear all items
+    			for(i=0; i<len; i++)
+    			{
+    				arChargeItem.getItemAt(i).ItemIsSelected = false;
+    			}
+    			// Set new items
+    			for(j=0; j<rlen; j++)
+    			{
+    				ciID = e.result[j].ChargeItemID;
+    				for(i=0; i<len; i++)
+    				{
+    					if(ciID == arChargeItem.getItemAt(i).ItemChargeID)
+    					{
+    						arChargeItem.getItemAt(i).ItemIsSelected = true;
+    						break;
+    					}
+    				}
+    			}
+    			if(dgSelCharge != null)
+    			{
+    				dgSelCharge.validateNow();
+    			}
+    		}
+    	}
+    	/*
+    		Here to create Member List - getClubMembers
+    	*/
+		private function memberCFCHandler(e:ResultEvent):void
+    	{ 
+    		var i:int, j:int, len:int, mtLen:int;
+    		var mt:String;
+    		var mc:MemberClass;
+    		len = e.result.length;
+    		arMemberList.removeAll();
+    		var countSelected:int = 0;
+    		if(acCMTZeroAmt == null) {return};		// Earlier failure
+    		for(i=0; i<len; i++)
+    		{
+    			mc = new MemberClass(e.result[i]);
+    			mc.dsn = dsn;
+    			mc.endPoint = _endPoint;
+    			mt = mc.MemberType;
+    			mtLen = acCMTZeroAmt.length;
+    			//zero out the charges
+    			for(j=0; j<mtLen; j++)
+    			{
+    				if(acCMTZeroAmt[j].MemberType == mt)
+    				{
+    					mc.MemberTypeID = acCMTZeroAmt[j].MemberTypeID;
+    					break;
+    				}
+    			}
+				arMemberList.addItem(mc);
+				
+				//1.38: if in arMemberCharge list, check this box and add charges (if needed)
+				for(j=0; j<arMemberCharge.length; j++) {
+					if(mc.UserID == arMemberCharge[j].UserID) {
+						mc.IsSelected = true;
+						mc.Charge = arMemberCharge[j].Charge; 
+						break;
+					}
+				}
+				if(mc.Charge.length > 0) {
+					countSelected++;
+				}
+    		}
+    		arMemberList.refresh();
+    		
+    		//refresh all other lists
+    		if(dgMember != null) {
+    			dgMember.validateNow();
+    		}
+    		if(dgMemberChrg != null) {
+    			dgMemberChrg.validateNow();
+    		}
+    		if(dgSelCharge != null) {
+        		dgSelCharge.validateNow();
+            }
+            //Alert.show("Checked in data:"+countSelected);
+            
+            //Now go through each charge Item and check members
+            /*
+            var i3:int=0, len3:int=arMemberCharge.length;
+            var j:int=0, memberLen:int=arMemberList.length;
+			for(i3;i3 < len3; i3++) {
+				for(j=0; j<memberLen; j++) {
+    				var ci:ChargeItem = arMemberCharge.getItemAt(i3) as ChargeItem;
+    			
+    				if(ci.UserID == arMemberList.getItemAt(j).UserID)
+    				{
+    					arMemberList.getItemAt(j).IsSelected = true;
+    				}
+				}
+			}
+			*/
+            
+            addMembers(e);
+    		
+    	}
+    	/*
+    		invoiceHandler
+    		View result is from Invoice selection
+    	*/
+    	private function invoiceHandler(e:ResultEvent):void
+    	{
+    		var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		var acList:ArrayCollection;
+    		//var orphans:ArrayCollection;
+    		var args:Object = {InvoiceGrpID:_model.selectedInvoiceGroup.InvoiceGrpID};
+    		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		acList = e.result as ArrayCollection;
+    		switch (msgOp)
+    		{
+    			case "Lookup":
+    				//TODO see note InvDAOlookup(acList);
+    				selMembers();	
+    				dgMemberChrg.validateNow();
+    				//TW:cairngorm remoteCFC.Lookup(objDistrict);		// Refresh Invoice List
+    				var getAllInvoiceGroups:GetAllInvoiceGroupsForClubEvent
+						= new GetAllInvoiceGroupsForClubEvent(_model.districtID);
+					CairngormEventDispatcher.getInstance().dispatchEvent(getAllInvoiceGroups);
+					
+    				findOrphanInvoices(acList);
+    				
+    				break;
+    			case "View":
+    				//TODO see note in InvDAOview(acList);
+    				selMembers();
+    				//TW:cairngormTODO invoiceCFC.Lookup(args);
+    				
+    				dgMemberChrg.validateNow();
+    				break;
+    			case "AddMember":
+    			case "DeleteMember":
+    				//TW:cairngormTODO invoiceCFC.View(args);
+    				selMembers();
+    				dgMemberChrg.validateNow();
+    				break;
+    			case "Post":
+    			case "Print":
+    				break;
+    			default:
+    				break;	
+    		}
+    	}
+    	/*
+    		Process InvoiceDAO - Lookup Result
+		* TODO figure out WTF this does...
+		private function InvDAOlookup(newerArrayC:ArrayCollection):void
+		{
+			var i:int, j:int, len:int, rlen:int;
+			var invID:int;
+			var newerArray:Array = newerArrayC.toArray();
+			var arMC:Array = new Array();
+			
+			if(arMemberCharge == null) {return;}
+			arMC = arMemberCharge.concat();
+			len = arMC.length;
+			rlen = newerArray.length;
+
+			for(i=0; i<len; i++)
+			{
+				invID = arMC[i].InvoiceID;
+				for(j=0; j<rlen; j++)
+				{
+					if(invID == newerArray[j].InvoiceID)	// match
+					{
+						arMC[i].Amount = newerArray[j].Amount;
+						newerArray.splice(j, 1);			// Remove from list
+						rlen = newerArray.length;
+						arMC.splice(i,1);
+						len = arMC.length;
+						i--;
+						break;
+					}
+				}
+			}
+		}
+		*/
+		
+		private function findOrphanInvoices(invoices:ArrayCollection):void
+		{
+			//Locate invoices with no member
+			//var invoicesList:Array, arML:Array;
+    		var i:int, j:int, invLen:int, memberLen:int;
+    		var userID:String;
+			//var orphans:ArrayCollection = new ArrayCollection();
+			//invoicesList = invoices.toArray();
+			invLen = invoices.length;
+    		//if(arMemberList == null) {Alert.show("Member List was null!"); return;}
+//			arML = arMemberList;	// Copy
+    		memberLen = arMemberList.length;
+    		var found:Boolean = false;
+    		orphans.removeAll();
+    		//orphans.removeAll();
+    		//loop invoices List, looking for invoices with no match
+    		for(i=0; i<invLen; i++)
+    		{	
+    			found = false;
+    			for(j=0; j<memberLen; j++)
+    			{
+    				if(invoices.getItemAt(i).UserID == arMemberList.getItemAt(j).UserID)
+    				{
+    					found = true;
+    					break;
+    				}
+    			}
+    			
+    			if(!found) {
+    				orphans.addItem(new MemberClass(invoices.getItemAt(i)));
+    			}
+    		}
+    		if(orphans.length > 0) {
+				var sortA:Sort = new Sort();
+            	var sortNames:SortField = new SortField("UserName");
+            	sortA.fields=[sortNames];
+            	orphans.sort=sortA;
+            	orphans.refresh();
+
+    			//currentState = "orphanstate";
+    			setViewState("orphanstate");
+    			if(!orphanWarningDone) { //Only show it once
+    				orphanWarningDone = true;
+    				Alert.show("Some invoices are for former members.\nThese are displayed on the 'Former' Tab");
+    			}
+    		} else { //unneeded second set
+    			//currentState = "member";
+    			setViewState("member");
+    			
+    		}
+    		
+    		//return orphans;
+		}
+		
+		/**
+		 * 
+		 ** TODO figure out WTF this does...
+		private function InvDAOview(ac:ArrayCollection):void
+		{
+			var arList:Array, arML:ArrayCollection;
+    		var i:int, j:int, rlen:int, mlen:int;
+    		var mc:MemberClass;
+    		var userID:String;
+    		var startT:int;
+    		var endT:int;
+    	
+    		if(arMemberList == null) {return;}
+    		arList = ac.toArray();
+			arML = arMemberList;	// Copy
+    		rlen = arList.length;
+    		mlen = arML.length;
+    		startT = getTimer();
+    		//loop Member List, then new invoice list
+    		for(i=0; i<mlen; i++)
+    		{
+    			arML.getItemAt(i).IsSelected = false;
+    			for(j=0; j<rlen; j++)
+    			{
+    				userID = arList[j].UserID;
+    				if(userID == arML.getItemAt(i).UserID)
+    				{
+    					arML.getItemAt(i).IsSelected = true;
+    					arML.getItemAt(i).InvoiceID = arList[j].InvoiceID;
+    					arML.getItemAt(i).InvoiceGrpID = arList[j].InvoiceGrpID;
+    					arML.getItemAt(i).customMsg = arList[j].Message;
+    					arList.splice(j,1);
+    					rlen = arList.length;
+    					break;
+    				}
+    			}
+    		}
+		}
+		 */
+		
+		
+		
+		public function selMembers():void
+		{
+			var i:int, len:int;
+			
+			if(arMemberList == null) {return;}
+			arMemberCharge = new Array();
+			len = arMemberList.length;
+			
+			//for each member
+			for(i=0; i<len; i++)
+			{
+				if(arMemberList.getItemAt(i).IsSelected)
+				{
+					arMemberList.getItemAt(i).MemInvoice = memInvoice;
+					arMemberCharge.push(arMemberList.getItemAt(i));
+					//Alert.show("Added Selected Member "+arMemberList[i]);
+				}
+			}
+			
+			dgMemberChrg.dataProvider = arMemberCharge;
+			dgMember.validateNow();
+		}
+
+
+		
+		private function clearAllChargeItems():void {
+			// Clear any charge items in list
+			var i:int = 0, len:int = arChargeItem.length;
+			for(i=0; i<len; i++)
+			{
+				arChargeItem.getItemAt(i).ItemIsSelected = false;
+			}
+			dgSelCharge.invalidateList();
+		}
+		private function tabChg(e:Event):void
+		{
+			var nI:ItemClickEvent;
+			var tmpDate:Date;
+			nI = e as ItemClickEvent;
+			if(nI.index == 2)
+			{
+			}
+		}
+	/*
+		Charge Editing Routines
+	*/
+
+		/*
+			Here from btnAddCharge
+			Charge Item tab
+			Initialize new ChargeItems Object
+		*/
+//		private function newChargeItem():void
+//		{		 
+//
+//			_SelChargeItem = new ChargeItem(null);
+//			_SelChargeItem.ItemMemberType = createTypeArray();
+//			chargePanel.cbChargeType.enabled = true;
+//			newCharge();
+//			chargePanel.setFields(true);
+//			chargePanel.setDisplay(0);		// Default
+//			chargePanel.chargeTypeReadOnly(false);
+//			//chargePanel.newCharge(_SelChargeItem
+//		}
+//		private function cancelCharge():void
+//		{
+//			newCharge();
+//			chargePanel.setFields(false);
+//			chargePanel.setDisplay(0);
+//		}
+//		public function createTypeArray():ArrayCollection
+//		{
+//			var i:int, len:int;
+//			var ac:ArrayCollection;
+//			var mt:MemType;
+//			ac = new ArrayCollection;
+//			len = acCMTZeroAmt.length;
+//			for (i=0; i<len; i++)
+//			{
+//				mt = new MemType(acCMTZeroAmt[i]);
+//				mt.Amount = 0;
+//				ac.addItem(mt);
+//			}
+//			return ac;
+//		}
+
+	
+		]]>
+	</mx:Script>
+</mx:Application>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MembersChargesComponent xmlns="com.infusion.invoice.views.components.memberInvoices.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	label="Members" width="100%" height="100%" id="memberTab" backgroundColor="#FFFFFF" 
+	borderColor="#FFFFFF" borderStyle="solid" borderThickness="9"
+	xmlns:actionButtons="com.infusion.invoice.views.components.actionButtons.*"> <!-- creationComplete="afterMemberTab()" enabled="false"-->
+<!--mx:Panel x="0" y="0" width="100%" height="100%" layout="absolute" id="members" title="Member List" 
+	borderColor="#D3F8E0" backgroundColor="#CCFFFF" borderStyle="inset"-->
+	<mx:Binding source="dgMember.selectedItems" destination="super.localSelectedMembersList"/>
+	<!-- Left side: All Members -->
+	<mx:VBox width="390" height="100%" borderStyle="outset" 
+		horizontalAlign="center" verticalAlign="middle" cornerRadius="2" backgroundColor="#F9ECC4">
+		<mx:HBox width="300" paddingTop="4">
+			<mx:CheckBox  id="includeFormer" label="Include Former Members Since:" selected="{this.isOverride}" click="localRefreshMembers(event)"/>
+			<mx:DateField id="formerDate" selectedDate="{invoiceMembersDate}" showToday="true" enabled="true" change="localRefreshMembers(event)"/>
+		</mx:HBox>
+		<mx:Spacer/>
+		<mx:HBox width="300" horizontalAlign="center" height="38" paddingTop="4">
+			<mx:Button label="Select All Members" width="140" id="btnSelectAll" click="selectAll()" enabled="true"/>
+			<mx:Button label="Clear All Members" width="140" id="btnClearAll" click="clearAll(event)" enabled="true"/>
+		</mx:HBox>
+
+		<mx:DataGrid width="95%" height="100%" id="dgMember" 
+			dataProvider="{_model.membersList}" itemClick="addMembers(event)" allowMultipleSelection="true">
+			<mx:columns>
+				<mx:DataGridColumn headerText=" " editable="true" 
+					textAlign="center" width="25" dataField="IsSelected" id="MemberIsSelected">
+					<mx:itemRenderer>
+						<mx:Component>
+							<mx:CheckBox/>
+						</mx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText=" " editable="false" visible="false"
+					textAlign="center" width="25" dataField="IsSelected" id="RO_MemberIsSelected">
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Member Name" dataField="UserName" itemRenderer="components.NameLabelBoldSelReadOnlyRenderer"/>
+				<mx:DataGridColumn headerText="Member Type" dataField="MemberType"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:VBox>
+	<!-- Center: Selected Members and their charges -->
+	<mx:VBox height="100%" width="300" borderStyle="outset" 
+		horizontalAlign="center" verticalAlign="middle" cornerRadius="2" backgroundColor="#F9ECC4" horizontalGap="0" verticalGap="0">
+		<mx:Form height="82" width="100%" verticalGap="0" paddingTop="0">
+			<mx:FormItem label="Invoice Group:" fontWeight="bold">
+				<mx:Label id="invName" fontWeight="bold" text="{_model.selectedInvoiceGroup.InvoiceGrp}" />
+			</mx:FormItem>
+			<mx:FormItem label="Date:">
+				<mx:Label  id="invDate" text="{_model.selectedInvoiceGroup.InvoiceDate}"/> 
+			</mx:FormItem>
+			<mx:FormItem label="Due Date:">
+				<mx:Label  id="invDueDate" text="{_model.selectedInvoiceGroup.DueDate}"/> 
+			</mx:FormItem>
+			<mx:FormItem label="Period:">
+				<mx:Label  id="invPeriod" text="{_model.selectedInvoiceGroup.Period}"/> 
+			</mx:FormItem>
+		</mx:Form>		
+
+		<mx:DataGrid height="100%" width="95%" dropEnabled="true" itemClick="actionMember(event)"
+		    id="dgMemberChrg" dataProvider="{_model.memberCharges}" >
+			<mx:columns>
+				<mx:DataGridColumn headerText="Selected Member" width="150" dataField="UserName"/>
+				<mx:DataGridColumn headerText="Amount" textAlign="center" dataField="Amount"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:VBox>
+	<!-- Right: Charges list -->
+	<mx:VBox width="300" height="100%" borderStyle="outset" 
+		horizontalAlign="center" verticalAlign="middle" cornerRadius="2" backgroundColor="#F9ECC4"
+		verticalGap="0">
+		<mx:HBox height="82" horizontalGap="8" borderStyle="none" backgroundColor="#F9ECC4">
+			<actionButtons:PostOrPrint id="postPrintPanel" invoiceGroup="{_model.selectedInvoiceGroup}" backgroundColor="#F9ECC4"/>
+			<mx:VBox height="100%" backgroundColor="#F9ECC4" borderStyle="none" width="120" paddingTop="4" horizontalAlign="center">
+				<mx:Button label="Print Invoices" id="btnPrint" width="110" enabled="true" click="handlePrint()"/>
+				<mx:Button label="Print Preview" width="110" click="handlePrintPreview()"/>
+			</mx:VBox>
+		</mx:HBox>
+		<mx:DataGrid id="dgSelCharge" width="95%" height="100%" 
+			 allowMultipleSelection="true" itemClick="addMemCharge(event)" dataProvider="{_model.chargeItemsList}">
+			<mx:columns>
+				<mx:DataGridColumn headerText=" " editable="true" 
+					textAlign="center" width="25" dataField="ItemIsSelected" id="ItemIsSelected">
+					<mx:itemRenderer>
+						<mx:Component>
+							<mx:CheckBox change="{data.ItemIsSelected=selected}"/>
+						</mx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText=" " editable="false" visible="false"
+					textAlign="center" width="25" dataField="ItemIsSelected" id="RO_ItemIsSelected" >
+				</mx:DataGridColumn>
+				<mx:DataGridColumn editable="false" headerText="Charge Item" dataField="ItemCharge" 
+					itemRenderer="components.NameLabelBoldSelReadOnlyRenderer"/>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:VBox>
+	<mx:Script>
+		<![CDATA[
+			//For setting local view stuff
+			private function localRefreshMembers(e:Event):void {
+				invoiceMembersDate = formerDate.selectedDate;
+				isOverride = includeFormer;
+				refreshMembers();
+			}
+		]]>
+	</mx:Script>
+</MembersChargesComponent>

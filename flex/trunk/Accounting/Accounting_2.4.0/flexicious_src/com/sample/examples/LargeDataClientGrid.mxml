@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:grids="com.flexicious.grids.*" xmlns:columns="com.flexicious.grids.columns.*" xmlns:mate="http://mate.asfusion.com/" width="100%">
+	<mx:Script>
+		<![CDATA[
+			import com.flexicious.export.ExportOptions;
+			import com.flexicious.export.ExportController;
+			import com.flexicious.print.PrintOptions;
+			import com.flexicious.print.PrintController;
+			import com.flexicious.utils.UIUtils;
+			import com.sample.SampleUIUtils;
+			import com.sample.model.Employee;
+			import com.flexicious.utils.DateRange;
+		]]>
+	</mx:Script>
+	<mx:TextArea width="100%" text="This example shows an advanced grid bound to a client side collection of 20000 records."/>
+	<grids:ExtendedAdvancedDataGrid 
+		enablePreferencePersistence="true" preferencePersistenceKey="lageDataClientGrid" pagerRenderer="com.sample.examples.support.CustomPagerControl"
+		dataProvider="{Employee.createCollection(20000)}" enableFilters="true" 
+		enableCopy="true" enableFooters="true" enablePaging="true" id="dgEmployees" height="271" 
+		pagerPosition="bottomMiddle" pageSize="50" width="100%" >
+		<grids:columns>
+			<columns:ExtendedAdvancedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="State" dataField="stateCode" filterRenderer="com.sample.examples.support.dynamicFilter.DynamicFilterControl"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+			<columns:ExtendedAdvancedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" footerOperation="average" footerLabel="Avg:" footerFormatter="{SampleUIUtils.currencyFormatterWithCents}" filterControl="NumericRangeBox"/>
+		</grids:columns>
+	</grids:ExtendedAdvancedDataGrid>
+	
+</mx:VBox>

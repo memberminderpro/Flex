@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" horizontalAlign="center" verticalAlign="middle" horizontalGap="0" verticalGap="0">
+	<mx:Script>
+        <![CDATA[           
+            // Define a property for returning the new value to the cell.
+            [Bindable]
+            public var returnTx:String;
+            private function textOut():void
+            {
+            	data.strAmount = amtTx.text;
+            	returnTx = amtTx.text;
+            }
+        ]]>
+    </mx:Script>
+    <!--
+    <mx:CurrencyValidator id="amt"
+    	source="{amt}" 
+        property="text" 
+        trigger="{amt}" 
+        triggerEvent="change"
+        decimalSeparator="."
+        precision="2"/>
+        -->
+    <mx:TextInput id="amtTx" 
+        text="{data.strAmount}"
+         
+        editable="true"
+        restrict="0-9.\-"
+        maxChars="10"
+        change="textOut()" width="85" height="20"/> 
+</mx:HBox>

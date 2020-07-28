@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:print="com.flexicious.print.*" xmlns:customRenderers="com.flexicious.grids.columns.customRenderers.*"
+				title="Print Preview"  xmlns:controls="com.flexicious.controls.*" showCloseButton="true" close="UIUtils.removePopUp(this)"
+				implements="com.flexicious.print.printareas.IPrintPreview" alpha="1.0" borderColor="#A8E6E7" borderAlpha="1">	
+	<mx:Metadata>
+		[Event(name="pageOptionsChanged", type="com.flexicious.print.PrintPreviewEvent")]
+		[Event(name="pageIndexChanged", type="com.flexicious.print.PrintPreviewEvent")]
+		[Event(name="printRequested", type="com.flexicious.print.PrintPreviewEvent")]
+		[Event(name="columnsChanged", type="com.flexicious.print.PrintPreviewEvent")]
+	</mx:Metadata>
+	<mx:Script>
+		<![CDATA[
+			import org.alivepdf.pages.Page;
+
+			
+			import com.flexicious.print.printareas.PageSize;
+			import com.flexicious.print.PrintOptions;
+			import com.flexicious.print.PrintPreviewEvent;
+			import com.flexicious.utils.UIUtils;
+			
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Image;
+			import mx.core.Container;
+			
+			import org.alivepdf.images.ColorSpace;
+			import org.alivepdf.layout.Mode;
+			import org.alivepdf.layout.Position;
+			import org.alivepdf.layout.Resize;
+			import org.alivepdf.layout.Size;
+			import org.alivepdf.layout.Unit;
+			import org.alivepdf.pdf.PDF;
+			import org.alivepdf.saving.Method;
+			
+			
+			[Bindable()]
+			public var pageSizes:ArrayCollection = new ArrayCollection([PageSize.PAGE_SIZE_LEGAL,PageSize.PAGE_SIZE_LETTER,PageSize.PAGE_SIZE_A3,PageSize.PAGE_SIZE_A4,PageSize.PAGE_SIZE_A5]);
+			[Bindable()]
+			public var layouts:ArrayCollection = new ArrayCollection([{"name":PageSize.PAGE_LAYOUT_POTRAIT},{"name":PageSize.PAGE_LAYOUT_LANDSCAPE}]);
+			
+			[Bindable()]
+			private var _currentPage:int=1;
+			public function get currentPage():int{
+				return _currentPage;
+			}
+			public function set currentPage(val:int):void{
+				_currentPage=val;
+			}
+			[Bindable()]
+			private var _totalPages:int=1;
+			public function get totalPages():int{
+				return _totalPages;
+			}
+			public function set totalPages(val:int):void{
+				_totalPages=val;
+			}
+			[Bindable()]
+			private var _printOptions:PrintOptions;
+			public function get printOptions ():PrintOptions{
+				return _printOptions;
+			}
+			public function set printOptions(val:PrintOptions):void{
+				_printOptions=val;
+				cbxColumns.selectedValues=new ArrayCollection();
+				rbnPageSize.selectedValue = val.pageSize.name;
+				rbnPageLayout.selectedValue = val.pageSize.isLandscape?PageSize.PAGE_LAYOUT_LANDSCAPE:PageSize.PAGE_LAYOUT_POTRAIT;
+				for each(var colToPrint:Object in val.columnsToPrint){
+					cbxColumns.selectedValues.addItem(colToPrint.name);
+				}
+			}
+			public function get content():Container{
+				return pageContent;
+			}
+			//called when the user changes any property like pagesize, layout or the page index
+			private function recreate(eventType:String="pageOptionsChanged"):void{
+				printOptions.pageSize = PageSize.getByName(rbnPageSize.selectedValue.toString()); 
+				printOptions.pageSize.isLandscape = rbnPageLayout.selectedValue ==PageSize.PAGE_LAYOUT_LANDSCAPE;
+				printOptions.columnsToPrint=new ArrayCollection(cbxColumns.selectedItems);
+				if(printOptions.columnsToPrint.length==1 && printOptions.columnsToPrint[0].name=="All"){
+					printOptions.columnsToPrint.removeAll();
+				}
+				dispatchEvent(new PrintPreviewEvent(eventType)); //this will cause the entire canvas to be redrawn, including rebuilding the grid
+			}
+			
+			//this simply shows the message saying we cannot change the actual print settings.
+			private function showSettingsMessage():void{
+				settingsMessage.visible=settingsMessage.includeInLayout=true;
+				
+			}
+			//This function demonstrates the Flexicious integration with Alive PDF.
+			private function generatePdf():void{
+				
+				var isLandscapse:Boolean=(rbnPageLayout.selectedValue.toString()==PageSize.PAGE_LAYOUT_LANDSCAPE);
+				var pdf:PDF = new PDF(rbnPageLayout.selectedValue.toString(),Unit.MM,Size.getSize(rbnPageSize.selectedValue.toString()));
+				printOptions.printToPdf=true;//when we do this, the controller makes images out of pages and puts it in the
+				//printedPages array. We can then send these anywhere, including to AlivePdf like we do in this case, 
+				dispatchEvent(new PrintPreviewEvent(PrintPreviewEvent.PRINT_REQUESTED));//this will print the pages...
+				for each(var displayObject:Image in printOptions.printedPages)
+				{
+					//now that we have the printed images in memory,
+					//send them to alivepdf.
+					addChild(displayObject);//need to add it to the stage so it renders
+					var page:Page=pdf.addPage();
+					var alivePdfSize:Size = Size.getSize(rbnPageSize.selectedValue);					
+					pdf.addImage(displayObject,null,0,0,alivePdfSize.mmSize[isLandscapse?1:0]-(20),
+					alivePdfSize.mmSize[isLandscapse?0:1]-(20),0,1,false); //account for pdf page padding of 20 px
+				}
+				printOptions.printToPdf=false;//so we send to printer next time user prints...
+				//small script to echo back the bytes of the pdf, you may use the flexicious Echo,
+				//but it is recommended that you implement this inside your own firewall for performance.
+				pdf.save( Method.REMOTE, "http://www.flexicious.com/Home/EchoPdf", "Report.pdf" );
+				/*
+				For local persistence of PDF - uncomment this section and comment the line above.
+				//Ensure that you are targeting Flash Player 10
+				//You will also need to pull in the appropriate imports
+				var fileReference:FileReference = new FileReference();
+				var bytes:ByteArray = pdf.save(Method.LOCAL);
+				fileReference.save(bytes, "file.pdf");
+				*/
+
+				for each( displayObject in printOptions.printedPages)
+					removeChild(displayObject);//remove it as soon as possible
+				printOptions.printedPages.removeAll();//now that we're done, remove it from memory.
+
+			}
+			[Bindable()]
+			public var colWidth:int=110;
+
+		]]>
+	</mx:Script>
+	<mx:HBox>
+		<mx:VBox >
+			<mx:Label text="Page Size:"/>
+			<controls:ComboBox id="rbnPageSize" width="{colWidth}"  change="showSettingsMessage();recreate()" 
+				dataProvider="{pageSizes}" labelField="name" dataField="name"/>
+		</mx:VBox>
+		<mx:VBox>
+			<mx:Label text="Layout:"/>
+			<controls:ComboBox id="rbnPageLayout"  width="{colWidth}"  change="showSettingsMessage();recreate()"
+				 dataProvider="{layouts}" labelField="name" dataField="name"/>
+				 
+		</mx:VBox>
+		<mx:VBox>
+			<mx:Label text="Columns:"/>
+			<controls:MultiSelectComboBox id="cbxColumns"  change="recreate(PrintPreviewEvent.COLUMNS_CHANGED)" dataProvider="{_printOptions.availableColumns}" addAllItem="true"  
+										  labelField="name" dataField="name" width="{colWidth}" dropdownWidth="300" label="All" height="23" />
+		</mx:VBox>
+		<mx:VBox>
+			
+			<mx:HBox>
+				<mx:VBox>
+					<controls:CheckBox bindingSource="{_printOptions}" bindingProperty="includePageHeader" id="cbIncludePageHeader" change="cbIncludePageHeader.setSourceFromControl();recreate()" label="Page Header" />
+					<controls:CheckBox bindingSource="{_printOptions}" bindingProperty="includePageFooter" id="cbIncludePageFooter" change="cbIncludePageFooter.setSourceFromControl();recreate()" label="Page Footer" />
+				</mx:VBox>
+				<mx:VBox>
+					<controls:CheckBox bindingSource="{_printOptions}" bindingProperty="includePrintHeader" id="cbIncludePrintHeader" change="cbIncludePrintHeader.setSourceFromControl();recreate()" label="Report Header" />
+					<controls:CheckBox bindingSource="{_printOptions}" bindingProperty="includePrintFooter" id="cbIncludePrintFooter" change="cbIncludePrintFooter.setSourceFromControl();recreate()" label="Report Footer" />
+				</mx:VBox>
+			</mx:HBox>
+		</mx:VBox>
+	</mx:HBox>
+	<mx:HBox id="buttonsBox">
+		<mx:Button label="&lt;&lt;" width="{(colWidth-buttonsBox.getStyle('horizontalGap'))/2}" click="_currentPage=1;recreate(PrintPreviewEvent.PAGE_INDEX_CHANGED)" enabled="{_currentPage!=1}"/>
+		<mx:Button label="&lt;" width="{(colWidth-buttonsBox.getStyle('horizontalGap'))/2}" click="_currentPage--;recreate(PrintPreviewEvent.PAGE_INDEX_CHANGED)" enabled="{_currentPage!=1}"/>
+		<mx:Button label="&gt;" width="{(colWidth-buttonsBox.getStyle('horizontalGap'))/2}" click="_currentPage++;recreate(PrintPreviewEvent.PAGE_INDEX_CHANGED)"  enabled="{_currentPage!=_totalPages}"/>
+		<mx:Button label="&gt;&gt;" width="{(colWidth-buttonsBox.getStyle('horizontalGap'))/2}" click="_currentPage=totalPages;recreate(PrintPreviewEvent.PAGE_INDEX_CHANGED)"  enabled="{_currentPage!=_totalPages}"/>
+		<mx:Button label="Print" width="{colWidth}" click="dispatchEvent(new Event('printRequested'));UIUtils.removePopUp(this)" />
+		<mx:Button label="Cancel" width="{colWidth}" click="UIUtils.removePopUp(this)" />
+	</mx:HBox>
+	<mx:VBox id="settingsMessage" verticalGap="0" paddingBottom="0" paddingTop="0" visible="false" includeInLayout="false">
+		<mx:Label text="Note: Changing Page Size or Layout will only update the Preview, not the actual Print." color="red" />
+		<mx:Label text="Please set the Page Size/Layout on Printer Settings via the Print Dialog Box that will be shown when you print." paddingTop="0" color="red"/>
+	</mx:VBox>
+	
+	<mx:Canvas id="pageContent"  borderStyle="solid" borderColor="black" height="100%">
+	</mx:Canvas>		
+	<mx:ControlBar width="100%" horizontalAlign="right">
+		<mx:Button label="Generate Pdf" width="{colWidth}" click="generatePdf()" />
+		<mx:Button label="Print" width="{colWidth}" click="dispatchEvent(new PrintPreviewEvent(PrintPreviewEvent.PRINT_REQUESTED));UIUtils.removePopUp(this)" />
+		<mx:Button label="Cancel" width="{colWidth}" click="UIUtils.removePopUp(this)" />
+	</mx:ControlBar>	
+</mx:TitleWindow>

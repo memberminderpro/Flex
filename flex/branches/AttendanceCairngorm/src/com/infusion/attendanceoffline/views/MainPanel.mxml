@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MainPanelComponent xmlns:mx="http://www.adobe.com/2006/mxml" 
+	xmlns="com.infusion.attendanceoffline.views.*"
+	xmlns:meetings="com.infusion.attendanceoffline.views.components.meetings.*"
+	creationComplete="onCreateComplete()" >
+
+	<meetings:MeetingListView id="meetingList" dataMeetingList="{boundMeetingsList}"
+		width="100%" height="100%"/>
+	<meetings:MeetingPanel id="selectedMeetingPanel" selectedMeeting="{boundSelectedMeeting}" 
+		dataMealCodes="{dataMealCodes}" width="100%" height="100%"/>
+		
+</MainPanelComponent>

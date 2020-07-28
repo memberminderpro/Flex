@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:grids="com.flexicious.grids.*" xmlns:columns="com.flexicious.grids.columns.*" xmlns:mate="http://mate.asfusion.com/" width="100%">
+	<mx:Script>
+		<![CDATA[
+			import com.flexicious.export.ExportOptions;
+			import com.flexicious.export.ExportController;
+			import com.flexicious.print.PrintOptions;
+			import com.flexicious.print.PrintController;
+			import com.flexicious.utils.UIUtils;
+			import com.sample.SampleUIUtils;
+			import com.sample.model.Employee;
+			import com.flexicious.utils.DateRange;
+		]]>
+	</mx:Script>
+	<mx:HBox width="100%">
+		<mx:Label text="# Selected Ids: {dgEmployees.selectedKeys.length}"/>
+		<mx:Spacer width="100%"/>
+		<mx:Button label="View Explanation For Example" click="UIUtils.openBrowserPopup('http://www.flexicious.com/Home/FlexDataGridPagingFilterClient',
+		'width=1024,height=768,lef t=0,top=0, toolbar=No,location=No,scrollbars=Yes,status=No,resizable=No,fullscreen=No')"/>
+	</mx:HBox>
+	<mx:TextArea width="100%" text="This example shows a classic grid bound to a client side collection of 466 records.(filterPageSortMode = client). It also demonsrate the print, export, custom footer, and dynamic filter (State column) "/>
+	<grids:ExtendedDataGrid id="dgEmployees" enablePreferencePersistence="true" 
+		preferencePersistenceKey="clientGrid" rowHeight="25" 
+		pagerRenderer="com.sample.examples.support.CustomPagerControl" dataProvider="{Employee.getAllEmployees()}" enableFilters="true" enableCopy="true" enableFooters="true" enablePaging="true" height="271" pagerPosition="bottomMiddle" pageSize="50" width="100%" initialSortField="employeeId" initialSortAscending="false" footerRowHeight="60"
+		>
+		<grids:columns>
+			<columns:SelectAllCheckBoxHeaderColumn columnWidthMode="fixed" width="15" selectedKeyField="employeeId"/>
+			<columns:ExtendedDataGridColumn headerText="ID" columnWidthMode="fixed" width="50" dataField="employeeId" filterOperation="Contains" filterControl="NumericTextInput"/>
+			<columns:ExtendedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="State" columnWidthMode="fixed" width="100" dataField="stateCode" filterRenderer="com.sample.examples.support.dynamicFilter.DynamicFilterControl"/>
+			<columns:ExtendedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150"/>
+			<columns:ExtendedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Active" columnWidthMode="fixed" width="50" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox"/>
+			<columns:ExtendedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0" footerAlign="center"/>
+			<columns:ExtendedDataGridColumn textAlign="right" columnWidthMode="fixed" width="150" labelFunction="SampleUIUtils.dataGridFormatCurrency" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" footerRenderer="com.sample.examples.support.CustomFooterRenderer"/>
+			<columns:ExtendedDataGridColumn headerText="Address" dataField="address" labelFunction="SampleUIUtils.dataGridFormatAddress" filterOperation="BeginsWith" filterControl="TextInput" useLabelFunctionForFilterCompare="true" columnWidthMode="fitToContent"/>
+		</grids:columns>
+	</grids:ExtendedDataGrid>
+
+</mx:VBox>

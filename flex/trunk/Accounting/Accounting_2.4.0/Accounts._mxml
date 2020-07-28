@@ -1,0 +1,68 @@
+
+/* ---From Accounts.mxml--------------------------------------		
+		/*
+			Here on RegisterItem complete events
+		*/
+		public function splitUpdate(e:Event):void
+		{
+			var ri:RegisterDAO;
+			
+			ri = e.currentTarget as RegisterDAO;
+			arSplitItem = ri.SplitArray;
+			splitTotal = ri.SplitTotal();
+			
+			if(dgRegister != null)
+			{
+				dgRegister.invalidateList();
+			}
+		}
+		/*
+			btnUpdate - RegisterItems grid
+			Determine Debit or Credit based on Register value
+		*/
+		private function regItemUpdate():void
+		{
+			var ri:RegisterItemDAO;
+			var amt:Number;
+			var amtType:String;
+			
+			if(selRegister.Debit != 0)
+			{
+				ri.Credit = amt;
+				amtType = "Credit";
+			}
+			if(selRegister.Credit != 0)
+			{
+				ri.Debit = amt;
+				amtType = "Debit";
+			}
+			selRegister.SplitUpdate(ri, amtType);
+		}
+		private function setDate(obj:Object, obj1:Object):String
+		{
+			return dateFormat.format(obj.RegDate);
+		}
+		private function setDueDate(obj:Object, obj1:Object):String
+		{
+			return dateFormat.format(obj.DueDate);
+		}
+		private function btnEnable(e:Event):void
+		{
+			selRegister = e.currentTarget.selectedItem as RegisterDAO;
+			btnDeleteRI.enabled = (selRegister.fEdit==1) ? true : false;
+		}
+		/*
+			Here from btnDeleteRI - click
+		*/
+		private function DeleteRI():void
+		{
+			var args:Register;
+			btnDeleteRI.enabled = false;
+			if(selRegister != null)
+			{
+				args = selRegister.RmtRegister as Register; 
+				registerCFC.Delete(args);
+			}
+		}
+		
+	-----------------*/	

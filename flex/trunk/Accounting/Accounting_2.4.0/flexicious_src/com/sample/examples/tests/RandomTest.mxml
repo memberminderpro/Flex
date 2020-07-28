@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" height="100%" width="100%"  xmlns:grids="com.flexicious.grids.*">
+
+	<mx:Array id="arr">
+        <mx:Object oid="1" articleName="Finding out a characters Unicode character code" data="15" />
+        <mx:Object oid="2" articleName="Setting an icon in an Alert control" data="14" />
+        <mx:Object oid="3" articleName="Setting an icon in a Button control" data="13" />
+        <mx:Object oid="4" articleName="Installing the latest nightly Flex 3 SDK build into Flex Builder 3" data="10" />
+        <mx:Object oid="5" articleName="Detecting which button a user pressed to dismiss an Alert dialog" data="9" />
+        <mx:Object oid="6" articleName="Using the Alert control" data="8" />
+        <mx:Object oid="7" articleName="Formatting data tips in a Slider" data="7" />
+        <mx:Object oid="8" articleName="Downloading the latest Adobe Labs version of Flex 3 SDK/Flex Builder 3 (codename: Moxie)" data="6" />
+         <mx:Object oid="9" articleName="Finding out a characters Unicode character code" data="15" />
+        <mx:Object oid="10" articleName="Setting an icon in an Alert control" data="14" />
+        <mx:Object oid="11" articleName="Setting an icon in a Button control" data="13" />
+        <mx:Object oid="12" articleName="Installing the latest nightly Flex 3 SDK build into Flex Builder 3" data="10" />
+        <mx:Object oid="13" articleName="Detecting which button a user pressed to dismiss an Alert dialog" data="9" />
+        <mx:Object oid="14" articleName="Using the Alert control" data="8" />
+        <mx:Object oid="15" articleName="Formatting data tips in a Sloider" data="7" />
+        <mx:Object oid="16" articleName="Downloading the latest Adobe Labs version of Flex 3 SDK/Flex Builder 3 (codename: Moxie)" data="6" />
+        <mx:Object oid="17" articleName="Finding out a characters Unicode character code" data="15" />
+        <mx:Object oid="18" articleName="Setting an icon in an Alert control" data="14" />
+        <mx:Object oid="19" articleName="Setting an icon in a Button control" data="13" />
+        <mx:Object oid="20" articleName="Installing the latest nightly Flex 3 SDK build into Flex Builder 3" data="10" />
+        <mx:Object oid="21" articleName="Detecting which button a user pressed to dismiss an Alert dialog" data="9" />
+        <mx:Object oid="22" articleName="Using the Alert control" data="8" />
+        <mx:Object oid="23" articleName="Formatting data tips in a Sloider" data="7" />
+        <mx:Object oid="24" articleName="Downloading the latest Adobe Labs version of Flex 3 SDK/Flex Builder 3 (codename: Moxie)" data="6" />
+        <mx:Object oid="25" articleName="Finding out a characters Unicode character code" data="15" />
+        <mx:Object oid="26" articleName="Setting an icon in an Alert control" data="14" />
+        <mx:Object oid="27" articleName="Setting an icon in a Button control" data="13" />
+        <mx:Object oid="28" articleName="Installing the latest nightly Flex 3 SDK build into Flex Builder 3" data="10" />
+        <mx:Object oid="29" articleName="Detecting which button a user pressed to dismiss an Alert dialog" data="9" />
+        <mx:Object oid="30" articleName="Using the Alert control" data="8" />
+        <mx:Object oid="31" articleName="Formatting data tips in a Sloider" data="7" />
+        <mx:Object oid="32" articleName="Downloading the latest Adobe Labs version of Flex 3 SDK/Flex Builder 3 (codename: Moxie)" data="6" />
+   </mx:Array>
+    <mx:ArrayCollection id="arrColl" source="{arr}" />
+    <grids:ExtendedDataGrid id="dg" enablePreferencePersistence="true"  filterRowHeight="20"
+		preferencePersistenceKey="randomGrid" 
+		pagerRenderer="com.sample.examples.support.CustomPagerControl" 
+		enableFilters="true" enableCopy="true" enableFooters="true" enablePaging="true" 
+		height="100%" width="100%" 
+		dataProvider="{arrColl}" variableRowHeight="true">
+        <grids:columns>
+            <mx:DataGridColumn dataField="oid" headerText="id of the article in question" />
+            <mx:DataGridColumn id="articleName" dataField="articleName" headerText="Name of the article in question" wordWrap="true" 
+            	width="150"/>
+            <mx:DataGridColumn id="data" dataField="data" headerText="ID of the article" />
+        </grids:columns>
+    </grids:ExtendedDataGrid>
+
+</mx:Canvas>

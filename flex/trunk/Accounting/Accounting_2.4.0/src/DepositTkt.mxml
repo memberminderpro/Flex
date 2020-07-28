@@ -1,0 +1,819 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" title="Deposit Ticket" fontSize="12" 
+	creationComplete="popUpInit()" creationPolicy="all" close="closeEvent(event)" showCloseButton="true" 
+	borderAlpha="1" borderColor="#A8E6E7" width="860" height="395" layout="absolute" 
+	backgroundColor="#F2F2F8"
+	>
+   <mx:states>
+      <mx:State name="StateLocked">
+         <mx:SetProperty name="icon" value="{LockedIcon}"/>
+         <mx:SetProperty target="{dgDepositItemsMembers}" name="editable" value="false"/>
+         <mx:SetProperty target="{dgDepositItemsOther}" name="editable" value="false"/>
+         <mx:SetProperty target="{dRegDate}" name="editable" value="false"/>
+         <mx:SetProperty target="{txtRefnum}" name="editable" value="false"/>
+         <mx:SetProperty target="{txtDescription}" name="editable" value="false"/>
+         <mx:RemoveChild target="{btnNewItem}"/>
+         <mx:RemoveChild target="{btnDelete}"/>
+         <mx:RemoveChild target="{btnSave}"/>
+         <mx:SetProperty target="{button1}" name="label" value="Close Window"/>
+         <mx:SetProperty target="{text1}" name="text">
+            <mx:value><![CDATA[Note: 
+- Reference and Description entered above apply to all deposits made.
+- This deposit ticket cannot be edited because it applies to a previous fiscal year.
+]]></mx:value>
+         </mx:SetProperty>
+         <mx:SetProperty target="{text1}" name="width" value="493"/>
+         <mx:SetProperty name="title" value="Deposit Ticket (Locked)"/>
+         <mx:SetEventHandler target="{dgDepositItemsMembers}" name="change"/>
+         <mx:SetEventHandler target="{dgDepositItemsMembers}" name="dataChange"/>
+         <mx:SetEventHandler target="{dgDepositItemsMembers}" name="itemEditEnd"/>
+         <mx:SetEventHandler target="{dgDepositItemsOther}" name="itemEditEnd"/>
+         <mx:SetEventHandler target="{dgDepositItemsOther}" name="dataChange"/>
+         <mx:SetEventHandler target="{dgDepositItemsOther}" name="change"/>
+         <mx:SetProperty name="titleIcon" value="@Embed(source='../assets/images/lock.png')"/>
+         <mx:SetProperty target="{dRegDate}" name="toolTip" value="{CommonStrings.notEditableMessage}"/>
+         <mx:SetProperty target="{txtRefnum}" name="toolTip" value="{CommonStrings.notEditableMessage}"/>
+         <mx:SetProperty target="{txtDescription}" name="toolTip" value="{CommonStrings.notEditableMessage}"/>
+         <mx:SetProperty target="{dgDepositItemsMembers}" name="toolTip" value="{CommonStrings.notEditableMessage}"/>
+         <mx:SetProperty target="{dgDepositItemsOther}" name="toolTip" value="{CommonStrings.notEditableMessage}"/>
+      </mx:State>
+   </mx:states>
+   <mx:Script>
+   	<![CDATA[
+   		import com.infusion.accounting.utils.CommonStrings;
+   		import mx.events.ListEvent;
+   	]]>
+   </mx:Script>
+   <mx:Script>
+   	<![CDATA[
+   		import org.alivepdf.links.Outline;
+   		import accounts.RegisterItem;
+   	]]>
+   </mx:Script>
+
+   <mx:RemoteObject 
+   	id="registerItemCFC"
+   	showBusyCursor="true"
+   	destination="ColdFusion"
+   	result="registerItemCFCHandler(event)"
+   	fault="CFCerror(event)"/> 
+		
+<mx:Script>
+	<![CDATA[
+		import com.infusion.accounting.components.editors.*;
+
+//Import all the Misc BS FLEX requires    	
+		import mx.events.ListEvent;
+        import mx.events.CollectionEvent;
+		import mx.events.DataGridEvent; 
+    	import mx.events.*;
+		import mx.controls.Alert;
+	    import mx.controls.DataGrid;
+		import mx.rpc.events.ResultEvent;
+    	import mx.rpc.events.FaultEvent;
+    	import mx.rpc.AsyncToken;
+		import mx.collections.XMLListCollection;
+		import mx.collections.ArrayCollection;
+		import mx.formatters.CurrencyFormatter;
+		
+
+		import mx.managers.PopUpManager;
+    	import mx.messaging.messages.RemotingMessage;
+    	import com.adobe.serialization.json.JSON;
+
+//Import this application modules         
+		import accounts.Register;
+		import accounts.RegisterDAO;
+		
+		import accounts.RegisterItem;
+		import accounts.RegisterItemDAO;
+		
+	    [Bindable]
+		public var callBack:Function;
+
+        private var _acSplitItems:ArrayCollection = new ArrayCollection(); // RegisterItem results returned as an ArrayCollection
+        [Bindable]
+        public function set acSplitItems(ac:ArrayCollection):void {
+        	//split them up
+        	_acSplitItems = ac;
+        	var ri:RegisterItem = null;
+        	for(var i:int=0; i < ac.length; i++) {
+        		ri = RegisterItem.castToRegisterItem(ac.getItemAt(i));
+        		if(ri.EntityID > 0) { //Member
+        			acSplitItemsMembers.addItem(ri);
+        		} else {
+        			acSplitItemsOthers.addItem(ri);
+        		}
+        	}
+        }
+        public function get acSplitItems():ArrayCollection {
+        	//put them back together
+        	var a:Array = new Array();
+        	a.concat(acSplitItemsMembers.source);
+        	a.concat(acSplitItemsOthers.source);
+        	return new ArrayCollection(a);
+        	
+        }
+        [Bindable]
+        private var acSplitItemsMembers:ArrayCollection = new ArrayCollection(); // RegisterItem results returned as an ArrayCollection
+        [Bindable]
+        private var acSplitItemsOthers:ArrayCollection = new ArrayCollection(); // RegisterItem results returned as an ArrayCollection
+        [Bindable]
+        private var acSplitItemsDeleted:ArrayCollection = new ArrayCollection(); //TW: sick of using filters for these ACs, storing deleted Items here instead
+        public var selectedRegItem:RegisterItem = null;
+        //public var selectedDataGrid
+        
+        [Bindable]
+    	public var depositTotal:Number = 0;
+    	[Bindable]
+    	public var ToAccount:String;
+    	[Bindable]
+    	public var duesAccount:Number = 0;
+    	
+		[Bindable] public var fullMembersList:XMLListCollection = new XMLListCollection();
+		[Bindable]
+		public function set membersList(mList:XMLList):void {
+			var dummy:XML = <member name="-- Select a Member --" value="0"/>;
+			//Now add the first selection 
+			fullMembersList = new XMLListCollection(mList);
+			fullMembersList.addItemAt(dummy, 0);
+		}
+		public function get membersList():XMLList {
+			return fullMembersList.text();
+		}
+		
+		
+// Set by Account.mxml		
+		public var r_Class:RegisterDAO;						// This is the register selected		
+		public var accts:XML;								// List of Accounts
+		public var fEdit:Boolean;							// New or Update
+    	public var dsn:String;
+    	public var endPoint:String;
+    	public var xmlMembers:XML;
+    	public var Today:Date;
+    	
+// Set locally		  
+    	private var listArgs:Object = {GL_AccountID:null, EntityID:null, IncProforma:"N"};
+		private var amtType:String;
+		private var fCredit:Boolean;
+		private var acctType:int;				// Account type for new items;
+
+// Referenced on Deposit PopUp 
+    	[Bindable]
+    	public var RegDate:Date;
+		[Bindable]
+		private var refNum:String;
+		[Bindable]
+		private var Description:String;
+		[Bindable]
+		private var Memo:String;
+		[Bindable]
+		public  var boolProforma:Boolean;
+		
+		
+
+		private function popUpInit():void
+		{
+			var i:int;
+			var temp:Object = new Object();
+
+			PopUpManager.centerPopUp(this);
+			//TW: 2.5.3 Is it locked?
+			if(r_Class.fBitLocked) {
+				this.currentState = 'StateLocked';
+			} else {
+				this.currentState = '';
+			}
+			
+			// Set up Remote calls
+       		registerItemCFC.destination="ColdFusion";
+			registerItemCFC.source = dsn + "CFC.RegisterItemDAO";
+			registerItemCFC.endpoint = endPoint;
+			
+			RegDate = Today;
+			ToAccount = r_Class.GL_Account;
+
+			if(fEdit) 	// May not need this -- if always new -- no registeritems
+			{													// Editing existing entry
+				SplitLookup();									//CALL ColdFusion RegisterItemDAO.Lookup
+			}
+			else
+			{	
+			}	
+		}
+
+/* -----------------------------------------------------------------------------------------
+	Deposit Ticket Private Functions 
+------------------------------------------------------------------------------------------ */
+
+		// Date, Description, Memo -- enable btnSave
+		private function regChange():void
+		{
+			btnSave.enabled = true;
+			
+		}
+		// DateChanged
+		private function DateChange():void
+		{
+			this.parentApplication.Today = dRegDate.selectedDate;
+			btnSave.enabled = true;
+		}
+		
+		
+		// Here after save completess
+		private function closeEvent(e:Event):void
+		{
+			removeDetail();
+		}
+
+		private function removeDetail():void
+		{
+			this.parentApplication.btnDeposit.enabled = true;			// Re-enable New, was disabled when this called
+			PopUpManager.removePopUp(this);
+		}
+
+/* -----------------------------------------------------------------------------------------
+	BUTTON - Event Functions 
+------------------------------------------------------------------------------------------ */
+
+		// btnAdd [ADD Item] - Add New Deposit (blank) Item in Grid
+		private function AddDeposit(e:Event):void
+		{
+			//TW: Old way pre-2.5.1
+			/*
+			var xml:XML =  
+				<Person>
+    				<member value='0'></member>
+       			 	<Amount>0.00</Amount>
+       			 	<RegisterItemID>0</RegisterItemID>
+       			 	<dFlag>false</dFlag>
+       			 	<FromAcctID>-1</FromAcctID>
+       			 	<NameOrComment></NameOrComment>
+       			 	<MemoRefID></MemoRefID>
+       			 </Person>;
+			acSplitItems.addItem(xml);
+			*/
+			//dgCustomEditor.invalidateList(); //TW: not needed anymore
+			
+			//TW: new way 2.5.1 using objects
+			var newReg:RegisterItem = new RegisterItem();
+			// Members
+			if(viewstack1.selectedIndex == 0) {
+				newReg.EntityID = 0; //new member
+				acSplitItemsMembers.addItem(newReg);
+				dgDepositItemsMembers.scrollToIndex(acSplitItemsMembers.length-1);
+				//dgDepositItemsMembers.invalidateList();
+			} else {
+				newReg.EntityID = -1; //new other type
+				acSplitItemsOthers.addItem(newReg);
+				dgDepositItemsOther.scrollToIndex(acSplitItemsOthers.length-1);
+				//dgDepositItemsOther.invalidateList();
+			}
+			
+			//dgDepositItems.editedItemPosition = {rowIndex: acSplitItems.length-1, columnIndex: 0};
+			btnSave.enabled = true;
+			btnDelete.enabled = true;
+			
+		}
+
+		// btnDelete [DELETE Item} - Delete Deposit EntryItem in Grid
+	   	private function DeleteDeposit(e:Event):void	
+     	{
+			var i:int, n:int, len:int; 
+
+			//n = dgDepositItems.selectedIndex;
+			//TW: Lame, but quicker
+			var ri:RegisterItem = null;
+			var removedRI:Object = null;
+			if(viewstack1.selectedIndex == 0) { //Members
+				ri = dgDepositItemsMembers.selectedItem as RegisterItem;
+				//find and remove
+				var loc:int = acSplitItemsMembers.getItemIndex(ri);
+				if(loc >= 0) {
+					removedRI = acSplitItemsMembers.removeItemAt(loc);
+					removedRI.dFlag = true;
+					acSplitItemsDeleted.addItem(removedRI);
+				}
+			} else if(viewstack1.selectedIndex == 1) { //Others
+				ri = dgDepositItemsOther.selectedItem as RegisterItem;
+				//find and remove
+				var loc:int = acSplitItemsOthers.getItemIndex(ri);
+				if(loc >= 0) {
+					removedRI = acSplitItemsOthers.removeItemAt(loc);
+					removedRI.dFlag = true;
+					acSplitItemsDeleted.addItem(removedRI);
+				}
+			} else {
+				trace("Cannot delete from unknown tab");
+			}
+
+			calculateDepositTotal();
+			
+		}
+		
+		//	btnSaveItem [SAVE] - click save modified register item
+		private function saveAllItems():void
+		{
+			//TW: do this for both arrays: members and others 
+
+
+			var i:int, n:int;
+			var Amount:Number;
+			//var s:String, m:String, v:String;
+			//var sXML:XML;
+			var len:int;
+			var args:Register;
+			var dataString:String;
+    		var si:Array; 
+    		var sp:Array;
+    		var amtType:String;
+    		var ri_Class:RegisterItemDAO;
+    		
+			calculateDepositTotal();									// Sum it one last time
+    		//TW: Single Deposit (debits from RegisterItems summed below)
+			r_Class.Description = (txtDescription.text.length > 0) ? txtDescription.text : "";
+			r_Class.Memo = (acSplitItemsMembers.length+acSplitItemsOthers.length)+" Deposits"; 
+			r_Class.RefNum = (txtRefnum.text.length > 0) ? txtRefnum.text : "";
+			r_Class.bitIsProforma = false;						// Never a Proforma
+			r_Class.bitIsDeposit = true;						// This IS a deposit
+			r_Class.Debit = depositTotal;		
+//trace(dRegDate.text);
+			r_Class.RegDate = dRegDate.text;
+			r_Class.DueDate = dRegDate.text;
+			r_Class.GL_ParentAccount = "";
+			r_Class.addEventListener(Event.CLOSE, closeEvent);
+
+			args = r_Class.RmtRegister;
+						
+			//Save Items for both Arrays
+			acSplitItemsMembers.filterFunction=processN0Filter;		
+			acSplitItemsMembers.refresh();
+			acSplitItemsOthers.filterFunction=processN0Filter;		// turn off the filter so we see the deleted
+			acSplitItemsOthers.refresh();
+			
+			var acSplitMerged:ArrayCollection = 
+				new ArrayCollection(acSplitItemsMembers.toArray().concat(acSplitItemsOthers.toArray()).concat(acSplitItemsDeleted.toArray()) );
+			var acSplitMergedReady:Array = saveItem(acSplitMerged).toArray();
+			args.RegisterItems = acSplitMergedReady;
+			//args.RegisterItems.concat(acSplitItemsDeleted.toArray()); //deleted
+			if(args.RegisterItems.length > 0) {
+				//Now send it to the backend!
+				this.parentApplication.SaveQ(args, true);				// RegisterDAO: Save the Results - Call the SaveQ function
+				this.parentApplication.btnDeposit.enabled = true;		// Re-enable Deposit, was disabled when this called
+				PopUpManager.removePopUp(this);
+			} else {
+				Alert.show("Please complete items before saving", "Cannot save Deposit");
+			}
+			
+		}
+		
+		private function saveItem(regItemsIn:ArrayCollection):ArrayCollection {
+		
+			var regItemsOut:ArrayCollection = new ArrayCollection();
+				
+			//TW: not sure why this has to be "array" -- a little misleading
+			//Maybe move it to just Object or even RegisterItem when we redo it
+			var _RegisterItem:Array = new Array;// Create the place holder
+			
+			if (regItemsIn.length == 0) {
+				Alert.show("There is no data to save.  Enter a member and amount.");
+				return regItemsOut;
+//				throw new Error("There is no data to save.  Enter a member and amount.");  
+			}
+				
+			for(var i:int=0; i < regItemsIn.length; i++) 
+			{
+				//TW: 2.5.1 memo=refid, descr=membername or comment, acctid = from acct(?)
+				var regItem:RegisterItem = RegisterItem.castToRegisterItem(regItemsIn[i]);
+				trace("Saving: "+regItem); 
+				var creditAccountID:int = duesAccount;
+				
+				var memo:String = txtRefnum.text; //General entry
+				if(regItem.Memo != null && regItem.Memo != "") { //line entry
+					//Override the register's memo if one was not defined
+					memo = regItem.Memo;
+				} 
+				
+				var description:String = txtDescription.text; //General entry
+				if(regItem.Description != null && regItem.Description != "") { //line entry
+					description = regItem.Description;
+				}
+				// this all should be in validators in the editor
+				if (regItem.EntityID == -1 ) { //no member specified, but need to get comment
+					/* v2.5.6 memo shouldn't be required
+					if(regItem.Memo == null || regItem.Memo == "") { //a.k.a refnum, which can be blank.
+						Alert.show("Please enter Comment or select a member name on line: " + (i+1));
+						continue; 
+					} 
+					*/
+					// Different fromAccountID required if not a member deposit
+					if(regItem.GL_AccountID <= 0) {
+						Alert.show("Please select a source account on line: " + (i+1));
+						continue; 
+					} else {
+						creditAccountID = regItem.GL_AccountID;
+					}
+					
+				}
+
+
+				//TW: plug values in to the RegisterItem for transport
+				_RegisterItem.RegisterID 		= r_Class.RegisterID;  
+				_RegisterItem.RegisterItemID 	= regItem.RegisterItemID;  
+				_RegisterItem.dFlag 			= regItem.dFlag;  
+				_RegisterItem.EntityID 			= regItem.EntityID;  
+				//_RegisterItem.GL_Account 		= ToAccount;  //Text String: This is really the Register Account
+				_RegisterItem.GL_AccountID 		= creditAccountID; //Credit Account 
+				_RegisterItem.Description 		= description;  //Also Member name or Happy Dollars note
+				_RegisterItem.Memo 				= memo;  //Also RefNum
+				_RegisterItem.Debit 			= 0.00;  
+				_RegisterItem.Credit 			= regItem.Credit//Amount;  
+
+				regItemsOut.addItem( new RegisterItemDAO( _RegisterItem ) );
+			}
+			regItemsOut.refresh();
+			return regItemsOut;
+
+		}
+
+/* -----------------------------------------------------------------------------------------
+	CFC Event Handlers and Support Functions
+------------------------------------------------------------------------------------------ */
+
+		// Lookups the RegisterItems associated with the Register Clicked //
+		public function SplitLookup():void 
+		{
+			var args:Object = {RegisterID:0, EntityID:0};
+			 
+			RegDate = r_Class.dRegDate;
+			refNum = r_Class.RefNum;
+			Description = r_Class.Description;
+			 
+			args.RegisterID = r_Class.RegisterID;
+    		args.EntityID = r_Class.EntityID;
+    		registerItemCFC.Lookup(args);									// Retrieve the RegisterItems 
+		}
+		
+		//	registerItemCFCHandler - called to fill popUpGrid
+		private function registerItemCFCHandler(e:ResultEvent):void
+		{
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		var id:int;
+    		var ac:ArrayCollection;
+    		var i:int, len:int;
+    		
+			rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+			
+			if(msgOp == "Lookup") 
+			{
+    			acSplitItems = e.result as ArrayCollection;	// Get data initally returned as AC
+    			//ACtoXML(); //TW: Old way
+    			//processSplitItems();
+    			
+				calculateDepositTotal();								// Sum Deposits			
+    		}
+    		dispatchEvent(new Event(Event.COMPLETE));		
+		}
+		//TW: no longer used?
+		private function processSplitItems():void {
+			var s:String;
+			for(var i:int=0; i<acSplitItems.length; i++) { //TW: is there a reason to do this?
+				trace("Processing split items: "+acSplitItems.getItemAt(i).Credit);
+				s = acSplitItems[i].Credit;
+				s = s.replace(",", "");
+				//Amount = ;
+				acSplitItems.getItemAt(i).Credit = Number(s);
+			}
+			
+			// no more filter acSplitItems.filterFunction=processFilter;	// Install filter for dFlag (Deleted items)
+		}
+		
+		/** TW: don't need if we use acSplitItems processSplitItems above instead **
+		private function ACtoXML():void
+		{
+			var i:int, len:int;
+			var Amount:Number, N:Number;
+			var sXML: String, s:String;
+			var xml:XML = <Person></Person>;  
+			
+			len = acSplitItems.length;
+			for(i=0; i<len; i++) 
+			{
+				s = acSplitItems[i].Credit;
+				s = s.replace(",", "");
+				Amount = Number(s);
+				//sXML = "<Person><member value='" + acSplitItems[i].EntityID + "'/><" + acSplitItems[i].Memo + "</member><Amount>" + Amount + "</Amount><RegisterItemID>" + acSplitItems[i].RegisterItemID + "</RegisterItemID><dFlag>false</dFlag></Person>";
+				//xml = new XML(sXML);
+				xml.appendChild(XMLList("<member value='"+acSplitItems[i].EntityID+"'/>"));
+				xml.appendChild(XMLList("<MemoRefID>"+acSplitItems[i].Memo+"<MemoRefID>")); //TW:added 2.5.1
+				xml.appendChild(XMLList("<Amount>" + Amount + "</Amount>"));
+				xml.appendChild(XMLList("<RegisterItemID>" + acSplitItems[i].RegisterItemID + "</RegisterItemID>"));
+				xml.appendChild(XMLList("<dFlag>" + false + "</dFlag>"));
+				xml.appendChild(XMLList("<NameOrComment>" + acSplitItems[i].Description  + "</NameOrComment>"));//TW: added 2.5.1
+				
+				acSplitItems.addItem(xml); //XML List Collection
+			}
+			acSplitItems.filterFunction=processFilter;	// Install filter for dFlag
+			dgCustomEditor.invalidateList();
+		}
+		 * */
+
+		private function CFCerror(e:FaultEvent):void
+		{
+			Alert.show(e.fault.faultString, "Please Contact support.  Error below: ");
+		}
+		
+/* -----------------------------------------------------------------------------------------
+	GRID Support Functions
+------------------------------------------------------------------------------------------ */
+
+		// called when grid is updated
+		private function gridUpdate():void
+		{
+			btnSave.enabled = true;
+			calculateDepositTotal();
+		}
+		
+		private function calculateDepositTotal():void 
+		{
+			var i:int, s:String, m:String, total:Number;
+			total = 0;
+			//Members
+			for(i=0; i<acSplitItemsMembers.length; i++) 
+			{
+				// why are we storing with commas anyway?
+				s = acSplitItemsMembers[i].Credit;
+				acSplitItemsMembers[i].Credit = s = s.replace(",", "")
+				total  += Number(acSplitItemsMembers[i].Credit);
+			}
+			//Others
+			for(i=0; i<acSplitItemsOthers.length; i++) 
+			{
+				// why are we storing with commas anyway?
+				s = acSplitItemsOthers[i].Credit;
+				acSplitItemsOthers[i].Credit = s = s.replace(",", "")
+				total  += Number(acSplitItemsOthers[i].Credit);
+			}
+			depositTotal = total;
+		}
+		// The code formats the Amount field (A.k.a. debit)
+		private function FormatAmount(item:Object, column:DataGridColumn):String 
+		{
+			var s:String;
+			var returnValue:String 
+			
+			s = item.Credit; //RegisterItem
+			s = s.replace(",", "");
+			returnValue = TheCurrencyFormatter.format(s);
+			calculateDepositTotal();
+			return returnValue;
+		}
+		
+	 	private function changeRegisterItemsView(e:Event):void {
+	 		// figure out which one was selected and filter and refresh the case
+	 		var indexEvent:IndexChangedEvent = e as IndexChangedEvent;
+	 		//trace("Tab was selected: "+indexEvent);
+	 		/*
+	 		acSplitItems.filterFunction = processN0Filter;
+	 		acSplitItems.refresh();
+	 		if(indexEvent.newIndex == 0) {
+	 			//Members
+	 			acSplitItems.filterFunction = processFilterMembersOnly;
+	 		} else if(indexEvent.newIndex == 1) {
+	 			//Others
+	 			acSplitItems.filterFunction = processFilterOthersOnly;
+	 		} else {
+	 			trace("Tab was not located in list: "+indexEvent.newIndex);
+	 		}
+	 		acSplitItems.refresh();
+	 		*/
+	 	}
+
+// TW: unused, probably...
+   		public function processFilterOthersOnly(item:Object):Boolean
+   		{
+   			var ri:RegisterItem = item as RegisterItem;
+   			trace("Other? "+ri);
+   			if(ri != null && !ri.dFlag && ri.EntityID == 0) {
+   				trace("true");
+   				return true;
+   			}
+   			return false;
+	   	}
+	   	public function processFilterMembersOnly(item:Object):Boolean
+   		{
+      		var ri:RegisterItem = item as RegisterItem;
+      		trace("Member? "+ri);
+      		if(ri != null && !ri.dFlag && ri.EntityID != 0) {
+      			trace("true");
+   				return true;
+   			}
+   			return false;//will be either -1 if new or an int
+	   	}
+	   	
+   		public function processN0Filter(item:Object):Boolean
+   		{
+      		return true;
+	    }// Define the event listener.
+        
+        //For Accounts popup editor
+        /*
+        public function processData(event:DataGridEvent):void {
+                // Check the reason for the event.
+                if (event.reason == DataGridEventReason.CANCELLED){
+                    // Do not update cell.
+                    return;
+                }           
+
+                if(event.dataField == 'GL_Account')
+                {
+                    // Disable copying data back to the control.
+                    event.preventDefault();
+
+                 var ri:RegisterItem = AccountSelectorEditor(DataGrid(event.target).itemEditorInstance).registerItem;
+                 dgDepositItemsOther.editedItemRenderer.data.GL_Account = "TODO";//ri.GL_Account;
+                 dgDepositItemsOther.editedItemRenderer.data.GL_AccountID = ri.GL_AccountID;
+                 dgDepositItemsOther.editedItemRenderer.data.GL_AccountTypeID = ri.GL_AccountTypeID;
+                    // Get new city from editor.
+                    //dgDepositItemsOther.editedItemRenderer.data.City = CityStateEditor(DataGrid(event.target).itemEditorInstance).setCity.text;
+                    // Get new state from editor.
+                    //dgDepositItemsOther.editedItemRenderer.data.State = CityStateEditor(DataGrid(event.target).itemEditorInstance).pickState.selectedItem;
+
+                    // Close the cell editor.
+                    dgDepositItemsOther.destroyItemEditor();
+
+                    // Notify the list control to update its display.
+                    dgDepositItemsOther.dataProvider.itemUpdated(event.itemRenderer.data);
+                }
+            }      
+	    
+	    */
+	   
+	    /*  TW unneeded now that we have easier editors? 
+		public function processData(event:DataGridEvent):void {                 
+            if(event.dataField=='EntityID')
+            {
+                 // Disable copying data back to the control.
+                 event.preventDefault();
+                  
+                 var ri:RegisterItem = DepositTicketView(dgDepositItems.itemEditorInstance)._registerItem;
+                 dgDepositItems.editedItemRenderer.data.GL_Account = ri.GL_Account;
+                 dgDepositItems.editedItemRenderer.data.GL_AccountID = ri.GL_AccountID;
+                 dgDepositItems.editedItemRenderer.data.GL_AccountTypeID = ri.GL_AccountTypeID;
+                 dgDepositItems.editedItemRenderer.data.Description = ri.Description;
+                 dgDepositItems.editedItemRenderer.data.EntityID = ri.EntityID;
+                 trace("EditComplete: "+ dgDepositItems.editedItemRenderer.data);
+//               dgDepositItems.editedItemRenderer.data.State=
+//                   com.infusion.accounting.components.editors.DepositTicketView(dgDepositItems.itemEditorInstance).pickState.selectedItem;
+
+				 if(! DepositTicketView(dgDepositItems.itemEditorInstance).stillEditing) {
+                 	dgDepositItems.destroyItemEditor();
+                 	// Notify the list control to update its display.
+                 	dgDepositItems.dataProvider.itemUpdated(dgDepositItems.editedItemRenderer);
+     			  }
+                   
+                  
+                 
+            }
+        }   
+        */
+        private function getMemberName(item:Object, column:DataGridColumn):String {
+        	var s:String = "Please select member name";
+        	var val:int = item[column.dataField];
+        	trace("Looking for: "+val);
+        	for(var i:int=0; i < fullMembersList.length; i++) {
+        		trace("Looking at: "+fullMembersList[i].@value);
+        		var memberInt:String = fullMembersList[i].@value;
+        		if(memberInt == val.toString()) {
+        			s = fullMembersList[i].@name;
+        			break;
+        		}
+        	}
+        	trace(s);
+        	return s;
+        }
+                    
+        [Bindable]
+        [Embed(source="../assets/images/status_online.png")]
+        private var MemberIcon:Class; 
+        
+        [Bindable]
+        [Embed(source="../assets/images/money.png")]
+        private var OtherEntryIcon:Class; 
+        
+        [Bindable]
+        [Embed(source="../assets/images/lock.png")]
+        private var LockedIcon:Class; 
+
+		
+	]]>
+</mx:Script>
+	<mx:CurrencyFormatter id="TheCurrencyFormatter" precision="2" rounding="none" decimalSeparatorTo="." 
+		thousandsSeparatorTo="," thousandsSeparatorFrom="" useThousandsSeparator="true" useNegativeSign="true" currencySymbol="" alignSymbol="left"/>
+	<mx:NumberFormatter id="setNumberFormat" useThousandsSeparator="true" thousandsSeparatorTo=","/>
+	<mx:DateFormatter id="dateFormat" formatString="MM/DD/YYYY"/> 
+	
+	<mx:Label x="50" y="12" text="Date:" textAlign="right" />
+	<mx:DateField x="97.95" y="10" id="dRegDate" change="DateChange()" text="{dateFormat.format(RegDate)}" width="100" />
+	
+	<mx:Label x="3.05" y="41.95" text="Account:" textAlign="right" width="86.95"  height="21.95"/>
+	<mx:Text x="97.95" y="41.95" id="txtToAccount" width="288" text="{ToAccount}"   fontWeight="bold"/>
+	
+	<mx:Label x="13.05" y="87.95" text="Reference:" textAlign="right" width="76.95"  />
+	<mx:TextInput x="97.95" y="85.95" id="txtRefnum" width="100" maxChars="10" change="regChange()"  text="{refNum}" />
+	
+	<mx:Label x="10" y="119.9" text="Description:" textAlign="right"/>
+	<mx:TextInput x="10" y="147.9" id="txtDescription" maxChars="50" width="285" change="regChange()"  text="{Description}"  height="78.1"/>
+	<mx:Text x="559" y="285" id="dgLength" width="40" textAlign="left" 
+		text="{acSplitItemsMembers.length+acSplitItemsOthers.length}"   height="18"/>
+	<mx:Text x="698" y="285" id="txBalance" width="115" textAlign="right" paddingRight="5"  text="{TheCurrencyFormatter.format(depositTotal)}"   height="20" fontWeight="bold"/>
+	<mx:Label x="649" y="285" text="Total:"/>
+	<mx:Label x="511" y="285" text="Items:" width="53"/>
+	<mx:Text x="10" y="263" text="Note: &#xa;- Reference and Description entered above apply to all deposits made." width="419" height="52" fontSize="10" id="text1"/>
+    <mx:Button x="622" y="6" label="New Item" id="btnNewItem" width="100" click="AddDeposit(event)" enabled="true" fontSize="10"/>
+    <mx:Button x="730" y="6" label="Delete Item" id="btnDelete" width="100" click="DeleteDeposit(event)" enabled="true" fontSize="10"/>
+
+    <mx:Script>
+       <![CDATA[
+            import mx.utils.ObjectUtil;
+            import mx.collections.XMLListCollection;
+            
+            
+        ]]>
+    </mx:Script>
+    <mx:Text x="98" y="60" text="(deposit will go into this account)" width="282" fontSize="10"/>
+    <mx:ViewStack x="303" y="42" id="viewstack1" width="527" height="226" change="changeRegisterItemsView(event)">
+        <mx:Canvas label="Member" icon="{MemberIcon}" 
+        	width="100%" height="100%">
+            <mx:DataGrid id="dgDepositItemsMembers" height="100%" width="100%" 
+            	editable="true" dataProvider="{acSplitItemsMembers}" variableRowHeight="true" 
+            	change="gridUpdate()" dataChange="gridUpdate()" itemEditEnd="gridUpdate()"
+            	alternatingItemColors="[#F7F7F7, #E1DFDF]" sortableColumns="false"
+            	>
+            	<mx:columns>
+            		<mx:DataGridColumn headerText="Ref. Info" width="75" dataField="Memo" /> 
+            		
+            		<mx:DataGridColumn headerText="From Member" width="250" dataField="EntityID" 
+            			itemEditor="com.infusion.accounting.components.editors.MemberComboboxEditor" 
+            			editorDataField="value"
+            			labelFunction="getMemberName"
+            			editable="true" >
+            			<!--mx:itemEditor>
+            			
+            			     <mx:Component>
+
+            			        <mx:ComboBox dataProvider="{outerDocument.fullMembersList}" change="trace('comboselected: '+(event as ListEvent));" labelField="@name">
+            			        
+            			        </mx:ComboBox>
+            			     </mx:Component>
+            			</mx:itemEditor-->
+            		
+            		</mx:DataGridColumn>
+            		<mx:DataGridColumn headerText="Amount" dataField="Credit" textAlign="right" 
+            			labelFunction="FormatAmount"
+            			width="50"
+            			
+            			/>
+            	</mx:columns>
+            </mx:DataGrid>
+        </mx:Canvas>
+        <mx:Canvas label="Other" icon="{OtherEntryIcon}" 
+        	width="100%" height="100%">
+            <mx:DataGrid id="dgDepositItemsOther" height="100%" width="100%" 
+            	editable="true" dataProvider="{acSplitItemsOthers}" variableRowHeight="true" 
+            	change="gridUpdate()" dataChange="gridUpdate()" 
+            	itemEditEnd="gridUpdate();"
+            	alternatingItemColors="[#F7F7F7, #E1DFDF]" sortableColumns="false"
+
+            	>
+            	<mx:columns>
+            		<mx:DataGridColumn headerText="Ref. Info"
+            			width="75" dataField="Memo" /> <!-- TW: for checking acct -->
+            		<mx:DataGridColumn headerText="From Other Source" width="150" dataField="Description" 
+            			textAlign="left"/>
+            		<mx:DataGridColumn headerText="To Account" width="100" dataField="GL_Account" 
+            			textAlign="left" 
+            			editable="false"
+            			itemRenderer="com.infusion.accounting.components.editors.AccountSelectorEditor"
+            			rendererIsEditor="true"
+            			>
+
+            		</mx:DataGridColumn>
+            		<mx:DataGridColumn headerText="Amount" dataField="Credit" textAlign="right" 
+            			labelFunction="FormatAmount"
+            			width="50"
+            			/>
+            	</mx:columns>
+            </mx:DataGrid>
+        </mx:Canvas>
+    </mx:ViewStack>
+    <mx:TabBar x="303" y="14" dataProvider="{viewstack1}">
+    </mx:TabBar>
+    <mx:ControlBar horizontalAlign="center">
+        <mx:Button label="Save Deposit Ticket" id="btnSave" width="174" click="saveAllItems()" enabled="false" fontSize="12"/>
+        <mx:Button label="Cancel" fontWeight="normal" click="closeEvent(event)" id="button1"/>
+    </mx:ControlBar>
+
+</mx:TitleWindow>

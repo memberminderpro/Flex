@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<cairngorm:ServiceLocator
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	xmlns:cairngorm="http://www.adobe.com/2006/cairngorm"
+	xmlns:dtos="com.infusion.attendanceoffline.model.dtos.*">
+	<!--
+		clubAttendance.endpoint = config.endPoint + "/flex2gateway";
+		clubMeeting.endpoint = config.endPoint + "/flex2gateway";
+		clubAttendance.source = config.dsn + ".CFC.ClubAttendanceFLEX";
+		clubMeeting.source = config.dsn + ".CFC.ClubMeetingFLEX";
+	-->
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.rpc.events.FaultEvent;
+		private function remoteError(e:FaultEvent):void
+ 		{
+ 			Alert.show(e.fault.faultString, "Server Error");	
+ 		}
+		]]>
+	</mx:Script>
+		
+	<dtos:AttdConfig id="attdConfig"/>
+
+    <mx:RemoteObject
+    	id="clubAttendanceRO" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="{attdConfig.destination+'.CFC.ClubAttendanceFLEX'}"
+    	endpoint="{attdConfig.endPoint+'/flex2gateway'}"
+    	/>
+    <mx:RemoteObject
+    	id="clubMeetingRO" showBusyCursor="true"
+    	destination="ColdFusion"
+    	fault="remoteError(event)"
+    	source="Rotary.CFC.ClubMeetingFLEX"
+    	endpoint="http://www.directory-online.com/flex2gateway"
+    	
+    	/>
+  
+
+</cairngorm:ServiceLocator>
+

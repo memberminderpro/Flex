@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" title="Record Check/Transfer" fontSize="12" 
+	creationComplete="popUpInit()" creationPolicy="all" close="closeEvent(event)" showCloseButton="true" 
+	borderAlpha="1" borderColor="#A8E6E7" width="860.0758" height="347" layout="absolute" backgroundColor="#F2F2F8">
+   <mx:states>
+      <mx:State name="StateLocked">
+         <mx:AddChild position="lastChild">
+            <mx:Text x="504" y="147.95" width="308.95" height="109.05" fontSize="10" id="text1">
+               <mx:text><![CDATA[Note: This record is locked and cannot be edited because it applies to a previous fiscal year.
+]]></mx:text>
+            </mx:Text>
+         </mx:AddChild>
+         <mx:SetProperty target="{button1}" name="enabled" value="false"/>
+         <mx:SetProperty target="{cbEntity}" name="editable" value="false"/>
+         <mx:SetProperty name="titleIcon" value="@Embed(source='../assets/images/lock.png')"/>
+         <mx:RemoveChild target="{btnSave}"/>
+         <mx:SetProperty target="{button2}" name="label" value="Close Window"/>
+         <mx:SetProperty target="{txtAmount}" name="editable" value="false"/>
+         <mx:SetProperty target="{dRegDate}" name="editable" value="false"/>
+         <mx:SetProperty target="{txtRefnum}" name="editable" value="false"/>
+         <mx:SetProperty target="{txtMemo}" name="editable" value="false"/>
+         <mx:SetProperty target="{txtDescription}" name="editable" value="false"/>
+         <mx:SetProperty target="{txtToAccount}" name="toolTip" value="{notEditableMessage}"/>
+         <mx:SetProperty target="{button1}" name="toolTip" value="{notEditableMessage}"/>
+         <mx:SetProperty target="{cbEntity}" name="toolTip" value="{notEditableMessage}"/>
+         <mx:SetProperty target="{txtDescription}" name="toolTip" value="{notEditableMessage}"/>
+         <mx:SetProperty target="{txtMemo}" name="toolTip" value="{notEditableMessage}"/>
+         <mx:SetProperty name="title" value="Record Check/Transfer (Locked)"/>
+         <mx:SetProperty target="{txtRefnum}" name="toolTip" value="{notEditableMessage}"/>
+         <mx:SetProperty target="{dRegDate}" name="toolTip" value="{notEditableMessage}"/>
+         <mx:SetProperty target="{txtAmount}" name="toolTip" value="{notEditableMessage}"/>
+         <mx:SetEventHandler target="{button1}" name="click"/>
+         <mx:SetEventHandler target="{cbEntity}" name="change"/>
+         <mx:SetEventHandler target="{txtDescription}" name="change"/>
+         <mx:SetEventHandler target="{txtMemo}" name="change"/>
+      </mx:State>
+   </mx:states>
+   <mx:icon>@Embed(source='../assets/images/application_form_edit.png')</mx:icon>
+
+   <mx:RemoteObject 
+   	id="registerItemCFC"
+   	showBusyCursor="true"
+   	destination="ColdFusion"
+   	result="registerItemCFCHandler(event)"
+   	fault="CFCerror(event)"/> 
+		
+<mx:Script>
+	<![CDATA[
+		import com.infusion.accounting.utils.CommonStrings;
+
+//Import all the Misc BS FLEX requires    	
+		import mx.events.ListEvent;
+        import mx.events.CollectionEvent;
+		import mx.events.DataGridEvent; 
+    	import mx.events.*;
+		import mx.controls.Alert;
+	    import mx.controls.DataGrid;
+		import mx.rpc.events.ResultEvent;
+    	import mx.rpc.events.FaultEvent;
+    	import mx.rpc.AsyncToken;
+		import mx.collections.XMLListCollection;
+		import mx.collections.ArrayCollection;
+		import mx.formatters.CurrencyFormatter;
+
+		import mx.managers.PopUpManager;
+    	import mx.messaging.messages.RemotingMessage;
+    	import com.adobe.serialization.json.JSON;
+
+//Import this application modules         
+		import accounts.Register;
+		import accounts.RegisterDAO;
+		
+		import accounts.RegisterItem;
+		import accounts.RegisterItemDAO;
+		
+    	[Bindable]
+        private var _members:Array;
+    	[Bindable]
+    	public var duesAccount:Number = 0;
+		
+// Set by Account.mxml		
+		public var r_Class:RegisterDAO;						// This is the register selected		
+		public var accts:XML;								// List of Accounts
+		public var fEdit:Boolean;							// New or Update
+    	public var dsn:String;
+    	public var endPoint:String;
+    	public var xmlMembers:XML;
+    	public var Today:Date;
+
+		private var arSplitItems:ArrayCollection;			// RegisterItem results returned as an ArrayCollection
+
+// Set locally		
+    	private var listArgs:Object = {GL_AccountID:null, EntityID:null, IncProforma:"N"};
+		private var amtType:String;
+		private var fCredit:Boolean;
+
+// Referenced on Split PopUp 
+		[Bindable]
+		private var refNum:String;
+		[Bindable]
+		private var Amount:String = "";
+    	[Bindable]
+    	public var FromAccount:String;
+    	[Bindable]
+    	public var ToAccount:String;
+    	[Bindable]
+    	public var RegDate:Date;
+		[Bindable]
+		private var Description:String;
+		[Bindable]
+		private var Memo:String;
+    	[Bindable]
+    	public var sEntity:String;							// Member/Entity Name
+
+    	public var EntityID:int;
+    	public var RegisterItemID:int;
+    	public var FromAccountID:int;
+    	public var ToAccountID:int = 0;
+		private var popAccts:popUpAccounts;
+		
+		//TW: 2.5.3
+		private var notEditableMessage:String = CommonStrings.notEditableMessage;
+
+		private function popUpInit():void
+		{
+			var i:int;
+			var temp:Object = new Object();
+
+			PopUpManager.centerPopUp(this);
+			//TW: 2.5.3 Is it locked?
+			if(r_Class.fBitLocked) {
+				this.currentState = 'StateLocked';
+			} else {
+				this.currentState = '';
+			}
+			
+			// Set up Remote calls
+       		registerItemCFC.destination="ColdFusion";
+			registerItemCFC.source = dsn + "CFC.RegisterItemDAO";
+			registerItemCFC.endpoint = endPoint;
+			
+			RegDate = Today;
+			txtRefnum.setFocus();
+			FromAccount = r_Class.GL_Account;
+			FromAccountID = r_Class.GL_AccountID;
+			if(fEdit) 	// May not need this -- if always new -- no registeritems
+			{												// Editing existing entry
+				SplitLookup();								//CALL ColdFusion RegisterItemDAO.Lookup
+			}	
+			// This sets the members and select the Combo SelectedItem
+          	_members = (new XMLListCollection(this.parentApplication.xmlMembers.member)).toArray();
+		}
+
+
+/* -----------------------------------------------------------------------------------------
+	Check Private Functions 
+------------------------------------------------------------------------------------------ */
+        private function selectMember(UserID:int):void
+        {
+        	var i:int, len:int;
+        	var selected:String; 
+
+          	len = _members.length;
+            for (i=0; i<len; i++)
+            {
+            	selected = _members[i].@value;
+               if(Number(selected) > 0)
+               {
+                  	if(Number(selected) == UserID)
+                  	{
+						cbEntity.selectedIndex = i;
+                     	break;
+                  	}
+               }
+            }
+        }
+
+
+		// Here after save completess
+		private function closeEvent(e:Event):void
+		{
+			removeDetail();
+		}
+
+		private function removeDetail():void
+		{
+			this.parentApplication.btnCheck.enabled = true;			// Re-enable Check, was disabled when this called
+			PopUpManager.removePopUp(this);
+		}
+
+/* -----------------------------------------------------------------------------------------
+	BUTTON - Event Functions 
+------------------------------------------------------------------------------------------ */
+
+		
+		//	btnSaveItem [SAVE] - click have modified register item
+		private function saveItem():void
+		{
+			var i:int, n:int;
+			var s:String, m:String, v:String;
+			var sXML:XML;
+			var len:int;
+			var args:Register;
+			var dataString:String;
+    		var Amt:Number;
+    		var ri_Class:RegisterItemDAO;
+    		var _RegisterItem:Array;
+    		var dF:Boolean
+    		
+    		if (ToAccountID == 0) {
+    			Alert.show("You must select an account");
+    			return;
+    		}
+    		if (ToAccountID == duesAccount && EntityID == 0) {
+    			Alert.show("You selected the member dues account.  You must therefore select a member.");
+    			return;
+    		}
+			r_Class.Description = (txtDescription.text.length > 0) ? txtDescription.text : "";
+			r_Class.Memo = (txtMemo.text.length > 0) ? txtMemo.text : "";
+			r_Class.RefNum = (txtRefnum.text.length > 0) ? txtRefnum.text : "";
+			r_Class.bitIsProforma = false;						// Never a Proforma
+			r_Class.bitIsCheck = true;						// This IS a check
+			Amt = Number(Amount.replace(',', ''));
+			r_Class.Debit = Number("0.00");
+			r_Class.Credit = Amt							// Check is a credit
+			r_Class.RegDate = dRegDate.text;
+			r_Class.DueDate = dRegDate.text;
+			r_Class.GL_ParentAccount = "";
+			r_Class.addEventListener(Event.CLOSE, closeEvent);
+
+			args = r_Class.RmtRegister;
+			_RegisterItem = new Array();					// Create the place holder
+
+			_RegisterItem.RegisterID 		= r_Class.RegisterID;  
+			_RegisterItem.RegisterItemID 	= RegisterItemID;  
+			_RegisterItem.dFlag 			= false;  
+			_RegisterItem.EntityID 			= EntityID;  
+			_RegisterItem.GL_Account 		= ToAccount;  	// This is really the Register Account
+			_RegisterItem.GL_AccountID 		= ToAccountID;  
+			_RegisterItem.Description 		= r_Class.Description;  
+			_RegisterItem.Memo 				= r_Class.Memo;  
+			_RegisterItem.Debit 			= Amt;			// Reverse	  
+			_RegisterItem.Credit 			= 0.00;  
+			ri_Class = new RegisterItemDAO( _RegisterItem );
+			args.RegisterItems.push( ri_Class );
+
+   			this.parentApplication.SaveQ(args, false);		// Save the Results - Call the SaveQ function
+			removeDetail();
+		}
+
+/* -----------------------------------------------------------------------------------------
+	CFC Event Handlers and Support Functions
+------------------------------------------------------------------------------------------ */
+
+		// Lookups the RegisterItems associated with the Register Clicked //
+		public function SplitLookup():void 
+		{
+			var strAmt:String;
+			var args:Object = {RegisterID:0, EntityID:0};
+			 
+			RegDate = r_Class.dRegDate;
+			refNum = r_Class.RefNum;
+			Description = r_Class.Description;
+			Memo = r_Class.Memo;
+			strAmt = r_Class.Credit.toString();
+			Amount = setCurrencyFormat.format(strAmt);
+			
+			if (duesAccount == r_Class.GL_AccountID) {
+				lblMember.visible = true;
+				cbEntity.visible = true;
+			}
+			else {
+				lblMember.visible = false;
+				cbEntity.visible = false;
+			}			
+			 
+			args.RegisterID = r_Class.RegisterID;
+    		args.EntityID = r_Class.EntityID;
+    		registerItemCFC.Lookup(args);									// Retrieve the RegisterItems 
+		}
+		
+		//	registerItemCFCHandler - called to fill popUpGrid
+		private function registerItemCFCHandler(e:ResultEvent):void
+		{
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		var id:int;
+    		var ac:ArrayCollection;
+    		var i:int, len:int;
+    		
+			rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+			
+			if(msgOp == "Lookup") 
+			{
+    			arSplitItems = e.result as ArrayCollection;	// Get data initally returned as AC
+    			len = arSplitItems.length;
+    			if (len == 1) {
+    				ToAccount = arSplitItems[0].GL_Account;
+    				ToAccountID = arSplitItems[0].GL_AccountID;
+    				EntityID = arSplitItems[0].EntityID;
+    				RegisterItemID = arSplitItems[0].RegisterItemID;
+
+					// If Dues Account -- Turn on Pulldown
+					if (duesAccount == ToAccountID) {
+						lblMember.visible = true;
+						cbEntity.visible = true;
+					}
+					else {
+						lblMember.visible = false;
+						cbEntity.visible = false;
+					}
+					selectMember(EntityID);		// Select the current member in the pull-down
+    			}
+    			else
+    			{
+    				Alert.show("Problem with record.  Expected 1 RegisterItem, found " + arSplitItems.length)
+    			}
+    		}
+    		dispatchEvent(new Event(Event.COMPLETE));		
+		}
+
+		private function CFCerror(e:FaultEvent):void
+		{
+			Alert.show(e.fault.faultString, "Server Error");
+		}
+		
+/* -----------------------------------------------------------------------------------------
+	GRID Support Functions
+------------------------------------------------------------------------------------------ */
+
+		// called when field  is updated
+		private function regChange():void
+		{
+			btnSave.enabled = true;
+		}
+
+		// DateChanged
+		private function DateChange():void
+		{
+			this.parentApplication.Today = dRegDate.selectedDate;
+			btnSave.enabled = true;
+		}
+
+  		private function formatString(e:FocusEvent):void 
+  		{
+        	var ti:TextInput = TextInput(e.currentTarget);
+ 			
+ 			Amount = ti.text.replace(",", "");
+ 			
+            if (!isNaN(Number(Amount))) {
+            	ti.data = ti.text;
+                ti.text = setCurrencyFormat.format(ti.data);
+            } else {
+            	ti.setFocus();
+			}
+			btnSave.enabled = true;
+        }
+		private function selectAccount():void
+		{
+			var n:int;
+			popAccts = popUpAccounts(PopUpManager.createPopUp(this, popUpAccounts, true));
+			popAccts.puAcct = accts;
+			
+			popAccts.callBack = AcctData;
+				
+			// Local function to handle callback
+			function AcctData(x:XML):void
+			{
+				var atype:int;
+				var acctID:int;
+				var acctNM:String;
+			
+				acctNM = x.@Label;
+				acctID = x.@ID;
+				atype = x.@GL_AccountTypeID;
+				ToAccountID = acctID;
+				ToAccount = acctNM;
+
+				// If Dues Account -- Turn on Pulldown
+				if (duesAccount == ToAccountID) {
+					lblMember.visible = true;
+					cbEntity.visible = true;
+				}
+				else {
+					lblMember.visible = false;
+					cbEntity.visible = false;
+				}
+			}
+			btnSave.enabled = true;
+		}
+		
+         // Display a selected item's label field and index for change events.
+         private function changeEvt(event:Event):void 
+         {
+         	var i:int, UserID:int, sUserID:String;
+         	
+         	i = cbEntity.selectedIndex;				// Get the current index
+         	sUserID = _members[i].@value;			// Find the members UserID (value=)
+         	UserID = Number(sUserID);
+			if (EntityID > 0 && EntityID != UserID)
+			{
+				Alert.show("Warning: You have changed the Member this item was originally associated with.");
+			}
+			EntityID = UserID;
+			btnSave.enabled = true;                
+         }	
+         					
+	]]>
+</mx:Script>
+	<mx:CurrencyFormatter id="setCurrencyFormat" precision="2" rounding="none" decimalSeparatorTo="." 
+		thousandsSeparatorTo="," thousandsSeparatorFrom="" useThousandsSeparator="true" useNegativeSign="true" currencySymbol="" alignSymbol="left"/>
+    
+	<mx:NumberFormatter id="setNumberFormat" useThousandsSeparator="true" thousandsSeparatorTo=","/>
+	<mx:DateFormatter id="dateFormat" formatString="MM/DD/YYYY"/> 
+
+	<mx:Label x="10" y="15.95" text="From Account:" textAlign="right" width="104.899994"  height="21.95"/>
+	<mx:Text x="122.85" y="15.95" id="txtFromAccount" width="347" text="{FromAccount}"   fontWeight="bold"/>
+	<mx:Text x="122.85" y="31.95" text="(funds will be withdrawn from this account)" width="282" fontSize="10"/>
+	
+	<mx:Label x="542.95" y="13.95" text="Reference/Check Num:" textAlign="right" width="154.95"  />
+	<mx:TextInput x="705.9" y="11.95" tabIndex="1" id="txtRefnum" width="107.05" maxChars="10" change="regChange()"  text="{refNum}" />
+	
+	<mx:Label x="641.95" y="43.95" text="Date:" textAlign="right"  width="55.95"/>
+	<mx:DateField x="705.9" y="41.95" tabIndex="2" id="dRegDate" change="DateChange()" text="{dateFormat.format(RegDate)}" width="107.05" />
+	
+	<mx:Label x="10" y="97" text="To Account:" textAlign="right" width="104.9"  height="21.95"/>
+	<mx:TextInput x="122.9" y="95" width="305"  tabIndex="3" id="txtToAccount" text="{ToAccount}" click="selectAccount()" change="regChange()" editable="false"/>
+    
+    <mx:Label x="630.85" y="95" text="Amount:" width="67" textAlign="right"/>
+    <mx:TextInput x="705.85" y="93" width="107.1" tabIndex="4" id="txtAmount" text="{Amount}"  textAlign="right"  paddingRight="15" focusOut="formatString(event)" />
+
+	<mx:Label x="34.85" y="168.95" text="Description:" textAlign="right"/>
+	<mx:TextInput x="122.85" y="166.95"  tabIndex="5" id="txtDescription" maxChars="50" width="347" change="regChange()"  text="{Description}" />
+
+    
+    <mx:ComboBox x="179.85" y="124.95" width="290.05"  tabIndex="6" 
+    	id="cbEntity" dataProvider="{_members}" labelField="@name" prompt="Select member" 
+    	change="changeEvt(event)" visible="false"  fontSize="10"></mx:ComboBox>
+    <mx:Label x="122.9" y="126.95" id="lblMember" text="Member:" width="57.95" textAlign="right" visible="{cbEntity.visible}"  fontSize="10"/>
+    
+    <mx:Label x="34.85" y="217" text="Memo:" width="77" textAlign="right"/>
+    <mx:TextInput x="122.85" y="215" width="347"  tabIndex="7" id="txtMemo" text="{Memo}" change="regChange()"/>
+    <mx:Button x="435" y="95" width="34.9" click="selectAccount()" toolTip="Select account to transfer/write a check into" id="button1">
+        <mx:icon>@Embed(source='../assets/images/folder_table.png')</mx:icon>
+    </mx:Button>
+    <mx:ControlBar horizontalAlign="center">
+        <mx:Button label="Save Check/Transfer" id="btnSave" width="174" click="saveItem()" enabled="false" fontSize="12" fontWeight="bold"/>
+        <mx:Button label="Cancel" fontWeight="normal" click="closeEvent(event)" id="button2"/>
+    </mx:ControlBar>
+
+</mx:TitleWindow>

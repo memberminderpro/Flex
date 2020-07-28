@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" backgroundColor="#F9ECC4">
+<mx:Script>
+		<![CDATA[
+			import com.infusion.invoice.events.PMailInvoiceGroupEvent;
+			import com.infusion.invoice.events.PostInvoiceGroupEvent;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.infusion.invoice.model.dtos.InvoiceGroup;
+		[Bindable] public var invoiceGroup:InvoiceGroup;
+		private function handlePostInvoice():void {
+			//TW:cairngorm 
+			//this.parentApplication._invoice.postInvoice();
+			var e:PostInvoiceGroupEvent = new PostInvoiceGroupEvent(invoiceGroup);
+			CairngormEventDispatcher.getInstance().dispatchEvent(e);
+		}
+		private function handlePMail():void {
+			//TW:cairngorm TODO
+			//this.parentApplication._invoice.sendPmail();
+			var e:PMailInvoiceGroupEvent = new PMailInvoiceGroupEvent(invoiceGroup);
+			CairngormEventDispatcher.getInstance().dispatchEvent(e);
+		}
+	]]>
+	</mx:Script>
+
+	<mx:Button id="postInvoiceButton" label="Post Invoice"
+		click="handlePostInvoice()" enabled="{!invoiceGroup.IsPosted}" />
+	<mx:Button id="pmailButton" label="PMAIL" icon="@Embed(source='assets/email.png')"
+		click="handlePMail()" enabled="{invoiceGroup.IsPosted}" />
+	
+</mx:VBox>

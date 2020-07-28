@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" title="Select a New Charge Type" fontSize="12" 
+	creationComplete="popUpInit()" creationPolicy="all" close="removeDetail()" showCloseButton="true" 
+	borderAlpha="1" backgroundColor="#A5AEB8" borderColor="#CCCCCC" width="440" height="144">
+<mx:Canvas  width="413" height="95"
+	backgroundColor="#F9ECC4" borderStyle="solid" cornerRadius="4" borderColor="#F0BD20" id="canvas1">
+	<mx:Label x="29" y="13" text="Charge Type:" fontSize="12"/>
+	<mx:ComboBox x="143" y="10" width="240" id="selectCharge" dataProvider="{chargeTypeList}" change="typeSelected"></mx:ComboBox>
+	<mx:Button label="Cancel" click="removeDetail()" x="197" y="55"/>
+	<mx:Button x="143" y="55" label="OK"/>
+</mx:Canvas>
+<mx:Script>
+	<![CDATA[
+		import mx.collections.ArrayCollection;
+		import mx.managers.PopUpManager;		
+		[Bindable]
+		public var chargeTypeList:ArrayCollection;
+		
+		public var selectedChargeType:int;
+		/**
+		newChargePopup.onChangeFunction = CTchange;
+        newChargePopup.callBack = callbackNewCharge;
+        * */
+		[Bindable]
+		public var onChangeFunction:Function;
+		public var callback:Function;
+
+		private function popUpInit():void
+		{
+			PopUpManager.centerPopUp(this);
+
+			
+			//TODO alert end user if invoice has selected members in it
+		}
+		private function removeDetail():void
+		{
+			PopUpManager.removePopUp(this);
+		}
+		private function typeSelected(e:Event):void
+		{ 
+			//ChargeTypeID, ChargeType
+			selectedChargeType = e.currentTarget.ChargeTypeID;
+			onChangeFunction(selectedChargeType);
+		}
+		
+	]]>
+</mx:Script>
+</mx:TitleWindow>

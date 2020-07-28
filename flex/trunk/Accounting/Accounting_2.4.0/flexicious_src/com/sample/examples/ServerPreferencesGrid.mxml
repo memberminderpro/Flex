@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="300" xmlns:grids="com.flexicious.grids.*" xmlns:columns="com.flexicious.grids.columns.*">
+	<mx:Script>
+		<![CDATA[
+			import com.sample.SampleUIUtils;
+			import com.flexicious.utils.DateRange;
+			import com.sample.model.Employee;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.events.FaultEvent;
+			import com.flexicious.utils.UIUtils;
+			import mx.rpc.http.HTTPService;
+			
+			//Called when the grid needs preferences (on creation complete)
+			private function onLoadPreferences():void{
+				callMethod("GetSavedPreferences",{gridName:dgEmployees.preferencePersistenceKey},onLoadPreferenceResult);
+			}
+			//Callback when the preference data is loaded from the server.
+			private function onLoadPreferenceResult(event:ResultEvent):void{
+				if(event.result.toString().length>0)
+				dgEmployees.preferences=event.result.toString();
+			}
+			//Called when the user clicks on "save preferences" in the preferences dialog box
+			private function onPersistPreferences():void{
+				callMethod("PersistPreferences",{gridName:dgEmployees.preferencePersistenceKey,prefXml:dgEmployees.preferences},onPersistPreferencesResult);
+			}
+			//Callback when the preference data is persisted on the server
+			private function onPersistPreferencesResult(response:ResultEvent):void{
+				processResult(response);
+			}
+			//Called when the user clicks on "clear preferences" in the preferences dialog box
+			private function onClearPreferences():void{
+				callMethod("ClearPreferences",{gridName:dgEmployees.preferencePersistenceKey},onClearPreferencesResult);
+			}
+			//Callback when the preference data is cleared on the server
+			private function onClearPreferencesResult(response:ResultEvent):void{
+				processResult(response);
+			}
+			
+			//here we just call server methods using http services, but you could
+			//use remoting or web services, or whatever
+			private function callMethod(methodName:String, parameters:Object, callBack:Function):void{
+				var serviceObj:HTTPService = new HTTPService();
+			    serviceObj.method = 'POST';//this is important because the pref string is rather large and wont fit in a get request
+			    serviceObj.useProxy = false;
+			    serviceObj.resultFormat="text" //this is important, otherwise flex will try to convert the response object to xml itself...
+			    serviceObj.addEventListener(ResultEvent.RESULT, callBack);
+			    serviceObj.addEventListener(FaultEvent.FAULT,processFault);
+			    serviceObj.url = 'http://www.flexicious.com/Home/'+methodName;
+			    serviceObj.send(parameters);
+			}
+			private function processResult(response:ResultEvent):void
+			{
+			    if(response.result){
+			    	var result:String=  response.result.toString();
+		    		UIUtils.showMessage(result);
+		    	}
+			}
+			private function processFault(response:FaultEvent):void
+			{
+		    	UIUtils.showMessage("Error occured while processing preferences." + response.toString());
+			}
+
+		]]>
+	</mx:Script>
+	
+	<grids:ExtendedDataGrid id="dgEmployees" enablePreferencePersistence="true" 
+		preferencePersistenceMode="server"
+		preferencePersistenceKey="serverPreferencesGrid" rowHeight="25" 
+		pagerRenderer="com.sample.examples.support.CustomPagerControl" 
+		dataProvider="{Employee.getAllEmployees()}" enableFilters="true" enableCopy="true" 
+		enableFooters="true" enablePaging="true" height="271" pagerPosition="bottomMiddle" 
+		pageSize="50" width="100%" initialSortField="employeeId" initialSortAscending="false"
+		loadPreferences="onLoadPreferences()" persistPreferences="onPersistPreferences()"
+		clearPreferences="onClearPreferences()"
+		>
+		<grids:columns>
+		
+			<columns:ExtendedDataGridColumn headerText="ID" columnWidthMode="fixed" width="50" dataField="employeeId" filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="State" columnWidthMode="fixed" width="50" dataField="stateCode" filterRenderer="com.sample.examples.support.dynamicFilter.DynamicFilterControl"/>
+			<columns:ExtendedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" filterControl="MultiSelectComboBox" filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150"/>
+			<columns:ExtendedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Active" columnWidthMode="fixed" width="50" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox"/>
+			<columns:ExtendedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0" footerAlign="center"/>
+			<columns:ExtendedDataGridColumn textAlign="right" columnWidthMode="fixed" width="150" labelFunction="SampleUIUtils.dataGridFormatCurrency" headerText="Annual Salary" dataField="annualSalary" filterControl="NumericRangeBox" />
+			<columns:ExtendedDataGridColumn headerText="Address" dataField="address" labelFunction="SampleUIUtils.dataGridFormatAddress" filterOperation="BeginsWith" filterControl="TextInput" useLabelFunctionForFilterCompare="true" columnWidthMode="fitToContent"/>
+		</grids:columns>
+	</grids:ExtendedDataGrid>
+</mx:Canvas>

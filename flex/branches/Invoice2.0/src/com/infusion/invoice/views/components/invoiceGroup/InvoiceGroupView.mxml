@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InvoiceGroupComponent xmlns="com.infusion.invoice.views.components.invoiceGroup.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%">
+	<mx:Form id="invoiceGroupForm">
+		<mx:FormItem label="Invoice Date:">
+			<mx:DateField id="invoiceGroupDate" text="{invoiceGroup.InvoiceDate}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Period:">
+			<mx:TextInput id="invoiceGroupPeriod" text="{invoiceGroup.Period}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Due Date:">
+			<mx:DateField id="invoiceGroupDueDate" text="{invoiceGroup.DueDate}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Description:">
+			<mx:TextInput id="invoiceGroupDescription" text="{invoiceGroup.Description}"/>
+		</mx:FormItem>
+		
+	</mx:Form>
+	<mx:Label text="Message To All Recipients:"/>
+	<mx:TextArea id="invoiceGroupMessage" text="{invoiceGroup.Message}"/>
+	<mx:Binding source="invoiceGroupDate.value as Date" destination="invoiceGroup.InvoiceDate"/>
+</InvoiceGroupComponent>

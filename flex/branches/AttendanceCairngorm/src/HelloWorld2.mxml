@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+	<!-- 
+		DACDB offline Attendance
+		
+	-->
+<mx:WindowedApplication 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+		pageTitle="Offline Attendance" 
+		xmlns:view="com.infusion.attendanceoffline.views.*" 
+		xmlns:control="com.infusion.attendanceoffline.commands.*" 
+		xmlns:business="com.infusion.attendanceoffline.services.*"
+		xmlns:components="com.infusion.attendanceoffline.views.components.*"
+		
+		width="814" height="788"  paddingLeft="3" paddingRight="3" paddingTop="3">
+<mx:Script>
+	<![CDATA[
+		import mx.controls.Alert;
+		//TODO checkNetworkConnection elsewhere
+		public function checkNetworkConnection():void {
+			//TODO
+		}
+	]]>
+</mx:Script>
+	<business:Services id="services" />
+	<control:Controller id="controller" /> 
+		
+	<!-- Main view that contains the complete app -->
+	<components:AppControlBarView width="100%" height="40" verticalAlign="top"/>
+	<mx:HBox id="header" width="100%" verticalAlign="middle">
+		<mx:Image id="logo" source="@Embed(source='RotaryLogo.png')"/>
+		<mx:VBox verticalGap="0">
+			<mx:Label text="Attendance Module" fontSize="16" fontWeight="bold" fontStyle="italic"/>
+			<mx:Label id="v" text="{version}"/>
+		</mx:VBox>
+		
+		
+		<components:NetworkStatusIndicatorButton id="networkStatusButton"/>
+	</mx:HBox>
+	<view:MainPanel width="100%" height="100%"/>
+	
+</mx:WindowedApplication>

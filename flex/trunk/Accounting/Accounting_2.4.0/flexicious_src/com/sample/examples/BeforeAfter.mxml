@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:grids="com.flexicious.grids.*" 
+	xmlns:columns="com.flexicious.grids.columns.*" 
+	xmlns:mate="http://mate.asfusion.com/" 
+	width="100%"  xmlns:controls="com.flexicious.controls.*">
+	<mx:Script>
+		<![CDATA[
+			import com.sample.model.Employee;
+			[Bindable()]
+			public var employee:Employee=Employee.getAllEmployees().getItemAt(0) as Employee;
+			[Bindable()]
+			public var employee1:Employee=Employee.getAllEmployees().getItemAt(1) as Employee;
+		]]>
+	</mx:Script>
+<!--New Controls - CheckBox List and RadioButton List-->
+
+<!--Data bound CheckBox List & Radio Button List example -->
+<!--Before (10 lines, approx 3-5 minutes)-->
+<mx:Script>
+	<![CDATA[
+		private function onStateRadioButtonChange(event:Event):void{
+			employee.stateCode=Employee.allStates[event.target.repeaterIndex];
+		}
+	]]>
+</mx:Script>
+<mx:Repeater id="rptrStates" dataProvider="{Employee.allStates}">
+<mx:RadioButton groupName="radioGroup" label="{rptrStates.currentItem.data}" 
+	data="{rptrStates.currentItem.label}" click="onStateRadioButtonChange(event )"  
+	selected="{rptrStates.currentItem.data.toUpperCase() == employee.stateCode.toUpperCase()}" />
+</mx:Repeater>
+<!--After (< 1 minute)-->
+<controls:RadioButtonList dataProvider="{Employee.allStates}" rowCount="4" bindingSource="{employee1}" bindingProperty="stateCode"/>
+				
+<!--Data bound Combo Box example-->
+<!--Before (10 lines, approx 3-5 minutes)-->
+<mx:Script>
+	<![CDATA[
+		private function onComboCreate(event:Event):void{
+			for each(var stateCode:Object in stateCombo.dataProvider){
+				
+				if(stateCode.data==employee.stateCode){
+					stateCombo.selectedItem=stateCode;
+					return;	
+				}
+			}
+		}
+	]]>
+</mx:Script>
+<mx:ComboBox id="stateCombo" dataProvider="{Employee.allStates}" creationComplete="onComboCreate(event)" change="employee.stateCode=stateCombo.selectedItem.data;" />
+<!--After (< 1 minute)-->
+<controls:ComboBox dataProvider="{Employee.allStates}" bindingSource="{employee1}" bindingProperty="stateCode"/>
+<!--OR-->
+<controls:ComboBox dataProvider="{Employee.allStates}" selectedValue="{employee.stateCode}" change="employee.stateCode=stateCombo.selectedItem.data;" />
+<controls:TriStateCheckBox allowUserToSelectMiddle="true" bindingSource="{employee}" bindingProperty="isActive" />
+
+<!--Data bound text box example-->
+<!--Before-->
+<mx:Script>
+	<![CDATA[
+		private function onFirstNameChange(event:Event):void{
+			employee.firstName=txtInput.text;
+		}
+	]]>
+</mx:Script>
+<mx:TextInput id="txtInput" text="{employee.firstName}" change="onFirstNameChange(event)"/>
+<!--After-->
+<controls:TextInput bindingSource="{employee}" bindingProperty="firstName"/>
+
+</mx:VBox>

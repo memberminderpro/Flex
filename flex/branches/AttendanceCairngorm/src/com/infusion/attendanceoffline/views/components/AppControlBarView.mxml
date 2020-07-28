@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppControlBar xmlns="com.infusion.attendanceoffline.views.components.*" xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%">
+		<mx:Button label="Setup" click="popupSetup()">
+			<mx:icon>@Embed(source='assets/wrench_orange.png')</mx:icon>
+		</mx:Button>
+		<mx:Button label="Sync" id="btnLoad" click="serverSync()" labelPlacement="right" enabled="true">
+			<mx:icon>@Embed(source='assets/table_refresh.png')</mx:icon>
+		</mx:Button>
+		<mx:Button label="Clear Data" id="btnClearData" click="onClearDataClick()">
+			<mx:icon>@Embed(source='assets/table_delete.png')</mx:icon>
+		</mx:Button>
+		<mx:Button label="Stats" click="popupStatistics()" id="btnStats">
+			<mx:icon>@Embed(source='assets/calculator.png')</mx:icon>
+		</mx:Button>
+		<!--mx:Button label="Print" id="btnPrint" icon="@Embed(source='assets/printer.png')" click="doPrint()" enabled="false"/-->
+		<mx:ProgressBar id="pgLoad" height="28"/>
+		<mx:Spacer width="95" height="0"/>
+		
+</AppControlBar>

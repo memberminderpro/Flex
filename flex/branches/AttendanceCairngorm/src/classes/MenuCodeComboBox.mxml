@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+    implements="mx.controls.listClasses.IDropInListItemRenderer,mx.managers.IFocusManagerComponent">
+<!--//Adapted from http://blog.flexmonkeypatches.com/2008/02/18/simple-datagrid-combobox-as-item-editor-example/ -->
+    <mx:Script>
+        <![CDATA[
+        	import mx.collections.ArrayCollection;
+            import mx.controls.listClasses.ListData;
+            import mx.controls.dataGridClasses.DataGridListData;
+            import mx.controls.listClasses.BaseListData;
+            import mx.controls.dataGridClasses.DataGridItemRenderer
+            import mx.events.FlexEvent;
+
+            private var _listData:DataGridListData;
+            // Define a property for returning the new value to the cell.
+            [Bindable]
+            public var value:Object;  
+            [Bindable]
+            public var mealCodes:ArrayCollection = new ArrayCollection();            
+
+            // Implement the drawFocus() method for the VBox.
+//            override public function drawFocus(draw:Boolean):void {
+//                cbo.setFocus();
+//            }
+
+            override public function get data():Object {
+                return super.data;
+            }            
+
+            override public function set data(value:Object):void {
+                cbo.data=value[_listData.dataField];
+            }
+            public function get listData():BaseListData
+            {
+                return _listData;
+            }
+
+            public function set listData(value:BaseListData):void
+            {
+                _listData = DataGridListData(value);
+            }  
+            
+            public function bindMealCodes(a:ArrayCollection):void {
+            	mealCodes = a;
+            }            
+
+        ]]>
+    </mx:Script>
+    <mx:Binding destination="value" source="cbo.value"/>
+   
+    <mx:ComboBox id="cbo" editable="false" width="100%" dataProvider="{mealCodes}">
+        
+    </mx:ComboBox>
+</mx:VBox>
+ 

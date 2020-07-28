@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RegisterComponentBase xmlns="com.infusion.accounting.components.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	xmlns:grids="com.flexicious.grids.*" 
+	xmlns:columns="com.flexicious.grids.columns.*"
+	width="100%" height="100%" >
+	<mx:Script>
+		<![CDATA[
+			import mx.events.DataGridEvent;
+			import com.flexicious.grids.events.FilterPageSortChangeEvent;
+			import com.infusion.accounting.event.SelectRegisterLineEvent;
+			import accounts.RegisterDAO;
+			import accounts.RegisterItem;
+			import com.adobe.cairngorm.control.CairngormEventDispatcher;
+			import com.infusion.accounting.event.ShowDepositDetailsEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.controls.Alert;
+			import com.flexicious.utils.DateRange;
+			//Normally don't do stuff like this here, but it's grid-related
+			public function formatDate(item:Object,column:ExtendedDataGridColumn):String
+			{
+				return dateFormat.format(item[column.dataField]);
+			}
+			
+			//TW handle doubleclick
+	   		private function doubleClickHandler(event:Event):void {
+				//Alert.show("doubleclicked 1 is: " + event);
+				trace(dgRegister.selectedItem);
+				var showEvent:ShowDepositDetailsEvent = new ShowDepositDetailsEvent(dgRegister.selectedItem as RegisterDAO);
+				CairngormEventDispatcher.getInstance().dispatchEvent(showEvent);
+				
+				//TW: I don't have time to hook this up right via Cairngorm due to popup weirdness.  
+				// DO it the lame (previous) way now
+				var lame:Accounts = this.parentApplication as Accounts;
+				lame.dblClkRegSelect(event); 
+			}
+			private function clickHandler(event:Event):void {
+				trace(dgRegister.selectedItem);
+				var selEvent:SelectRegisterLineEvent = new SelectRegisterLineEvent(dgRegister.selectedItem as RegisterDAO);
+				CairngormEventDispatcher.getInstance().dispatchEvent(selEvent);
+			}
+			// initialize="gridInit(event);"
+			private function gridInit(event:FlexEvent):void {
+				event.currentTarget.itemRenderer.properties = {doubleClickEnabled:true};
+			}
+			//itemDoubleClick="doubleClickHandler(event);" initialize="gridInit(event);"
+			
+			//This event is fired when the user changes the sort, page or filter 
+			//TODO re-enable paging on the dgRegister below with filterPageSortChange="onFilterPageSortChange(event)"
+            private function onFilterPageSortChange(event:FilterPageSortChangeEvent):void
+            {
+                var dataGridEvent:DataGridEvent = event.triggerEvent as DataGridEvent;
+                Alert.show("Would filter here: "+event);
+                //here we build our custom filter object and send it to the server
+                //TODO j2eeRemoteObject.getEmployees(new MyFilter(event.filter));
+            }
+		]]>
+	</mx:Script>
+	<mx:DateFormatter id="dateFormat" formatString="MMM DD, YYYY"/>
+	
+	<!-- 2.5.4 had to remove paging.  TODO add back -->
+	<grids:ExtendedDataGrid id="dgRegister" enablePreferencePersistence="false" 
+		preferencePersistenceKey="dacdbAccountRegistryGrid255" rowHeight="25" 
+		pagerRenderer="com.sample.examples.support.CustomPagerControl" dataProvider="{dataRegister}"
+		itemClick="clickHandler(event)"
+		doubleClickEnabled="true" 
+		itemDoubleClick="doubleClickHandler(event)"
+		enableFilters="true"
+		enableCopy="true" enableFooters="false" 
+		enablePaging="false" 
+		forcePagerRow="true"  pagerVisible="false"
+		editable="false" 
+		enableExport="true" enablePrint="true"
+		verticalScrollPolicy="on"
+		pagerPosition="bottomMiddle" pageSize="500" width="100%" height="100%"
+		>
+		<grids:columns>
+			<!-- TW: added 2.5.3 for "edited" -->
+			<columns:ExtendedDataGridColumn headerText="-" width="20"  dataField="fBitLocked" 
+				itemRenderer="com.infusion.accounting.components.renderers.RegisterIsLockedRenderer" 
+				filterOperation="Equals" filterControl="TriStateCheckBox"/>
+			<columns:ExtendedDataGridColumn headerText="Date" columnWidthMode="fixed" width="85" 
+				dataField="dRegDate" 
+				filterControl="DateComboBox"
+				labelFunction="formatDate" excludeFromSettings="true" 
+				filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" 
+				filterComboBoxWidth="150"/>
+			<columns:ExtendedDataGridColumn headerText="Reference" width="85"  dataField="RefNum" 
+				filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Description" width="125" dataField="Description" 
+				filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn id="memo" headerText="Memo" width="125" dataField="Memo" 
+				filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Due Date" columnWidthMode="fixed" width="85" dataField="DueDate" 
+				labelFunction="formatDate"
+				filterControl="DateComboBox"
+				filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" 
+				filterComboBoxWidth="150" visible="{dueDateVisible}"/>
+			<columns:ExtendedDataGridColumn id="debit" textAlign="right" columnWidthMode="fixed" width="75" 
+				headerText="{debitHeaderLabel}" excludeFromSettings="true" 
+				dataField="strDebit" filterControl="NumericRangeBox" />
+			<columns:ExtendedDataGridColumn id="credit" textAlign="right" columnWidthMode="fixed" width="75" 
+				headerText="{creditHeaderLabel}" excludeFromSettings="true" 
+				dataField="strCredit" filterControl="NumericRangeBox" />
+			<columns:ExtendedDataGridColumn id="Balance" textAlign="right" columnWidthMode="fixed" width="75" 
+				itemRenderer="com.infusion.accounting.components.renderers.RegisterTotalBalanceRenderer" headerText="Balance" 
+				dataField="strBalance" filterControl="NumericRangeBox" />
+		</grids:columns>
+	</grids:ExtendedDataGrid>
+</RegisterComponentBase>

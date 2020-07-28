@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"  xmlns:grids="com.flexicious.grids.*" xmlns:columns="com.flexicious.grids.columns.*">
+<mx:Script>
+	<![CDATA[
+		import com.flexicious.utils.UIUtils;
+			[Bindable()]
+			private var xml:XML=<AccountingSummaryReport Name="Investment Management" RowType="GrandTotals" PRIOR_MTM="1302368682.4497685" REALIZED_UNWINDS_MTM="0" CURRENT_MTM="0" CHG_MTM="-1302368682.4497685" PRIOR_INTEREST_ACCRUAL="24457417.30130159" REALIZED_INTEREST_PAYMENTS="0" REALIZED_UNWINDS_INTEREST="0" CURRENT_INTEREST_ACCRUAL="0" CHG_INTEREST="-24457417.30130159">
+					<HedgeCodeGroup Name="ALCO BS Hedges" RowType="SubTotals" PRIOR_MTM="26942247.699888986" REALIZED_UNWINDS_MTM="0" CURRENT_MTM="0" CHG_MTM="-26942247.699888986" PRIOR_INTEREST_ACCRUAL="7999439.926716923" REALIZED_INTEREST_PAYMENTS="0" REALIZED_UNWINDS_INTEREST="0" CURRENT_INTEREST_ACCRUAL="0" CHG_INTEREST="-7999439.926716923">
+						<HedgeCode Name="NQ-MTM-BSHEDGE" RowType="Detail" PRIOR_MTM="26942247.699888986" REALIZED_UNWINDS_MTM="0" CURRENT_MTM="0" CHG_MTM="-26942247.699888986" PRIOR_INTEREST_ACCRUAL="7999439.926716923" REALIZED_INTEREST_PAYMENTS="0" REALIZED_UNWINDS_INTEREST="0" CURRENT_INTEREST_ACCRUAL="0" CHG_INTEREST="-7999439.926716923"/>
+					</HedgeCodeGroup>
+					
+				</AccountingSummaryReport>
+	]]>
+</mx:Script>
+
+	<grids:ExtendedAdvancedDataGrid id="dgAccountingSummary" 
+		pagerRenderer="com.sample.examples.support.CustomPagerControl"
+		displayItemsExpanded="true" enablePreferencePersistence="true" 
+		preferencePersistenceKey="advancedHierarchicalGrid" variableRowHeight="true" 
+		enableFilters="false" enableCopy="true" enableFooters="false" 
+		enablePaging="false" forcePagerRow="true" pagerPosition="bottomMiddle"  
+		pageSize="15" width="90%" height="100%" >
+		<grids:dataProvider>
+			<mx:HierarchicalData source="{xml}"/>
+		</grids:dataProvider>
+		<grids:groupedColumns>
+			<mx:AdvancedDataGridColumn dataField="@Name" width="450" headerText="Hedge Codes"/>
+			<mx:AdvancedDataGridColumnGroup headerText="Mark to Market">
+				<columns:ExtendedAdvancedDataGridColumn headerText="Prior MTM" dataField="@PRIOR_MTM" textAlign="right" width="150"/>
+				<columns:ExtendedAdvancedDataGridColumn headerText="Realized Unwinds MTM" dataField="@REALIZED_UNWINDS_MTM" labelFunction="UIUtils.dataGridFormatCurrencyLabelFunction" textAlign="right" width="150"/>
+				<columns:ExtendedAdvancedDataGridColumn headerText="Curr MTM" dataField="@CURRENT_MTM" labelFunction="UIUtils.dataGridFormatCurrencyLabelFunction" textAlign="right" width="150"/>
+				<columns:ExtendedAdvancedDataGridColumn headerText="Chg MTM" dataField="@CHG_MTM" labelFunction="UIUtils.dataGridFormatCurrencyLabelFunction" textAlign="right" width="150"/>
+			</mx:AdvancedDataGridColumnGroup>
+			<mx:AdvancedDataGridColumnGroup headerText="Interest">
+				<columns:ExtendedAdvancedDataGridColumn headerText="Prior Int Accrl" dataField="@PRIOR_INTEREST_ACCRUAL" labelFunction="UIUtils.dataGridFormatCurrencyLabelFunction" textAlign="right" width="150"/>
+				<columns:ExtendedAdvancedDataGridColumn headerText="Realized Int Payments" dataField="@REALIZED_INTEREST_PAYMENTS" labelFunction="UIUtils.dataGridFormatCurrencyLabelFunction" textAlign="right" width="150"/>
+				<columns:ExtendedAdvancedDataGridColumn headerText="Realized Unwinds Int" dataField="@REALIZED_UNWINDS_INTEREST" labelFunction="UIUtils.dataGridFormatCurrencyLabelFunction" textAlign="right" width="150"/>
+				<columns:ExtendedAdvancedDataGridColumn headerText="Curr Int Accrl" dataField="@CURRENT_INTEREST_ACCRUAL" labelFunction="UIUtils.dataGridFormatCurrencyLabelFunction" textAlign="right" width="150"/>
+				<columns:ExtendedAdvancedDataGridColumn headerText="Chg Int" dataField="@CHG_INTEREST" labelFunction="UIUtils.dataGridFormatCurrencyLabelFunction" textAlign="right" width="150"/>
+			</mx:AdvancedDataGridColumnGroup>
+		</grids:groupedColumns>
+	</grids:ExtendedAdvancedDataGrid>
+</mx:VBox>

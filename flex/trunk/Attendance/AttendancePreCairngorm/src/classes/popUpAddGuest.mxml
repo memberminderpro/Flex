@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="594" height="252"
+	showCloseButton="true" xmlns:classes="classes.*" creationComplete="init()" currentState="GuestOfMemberView" borderColor="#C8C8C8" alpha="1.0" backgroundColor="#383CD8" title="Add Guest">
+	<mx:Boolean id="wasCanceled"/>
+	<mx:states>
+		
+		<mx:State name="BasicGuestView">
+		<mx:AddChild relativeTo="{rightPanel}" position="lastChild">
+		<mx:Form x="0" y="0" width="304" height="173" id="form1">
+					<mx:FormItem label="Guest Name:" id="guestNameItem">
+						<mx:TextInput id="formGuestName" />
+					</mx:FormItem>
+					<mx:FormItem label="Guest of:" width="252" id="guestItem">
+						<mx:ComboBox id="formGuestOfMember" dataProvider="{dataGuestNames}" labelField="UserName" width="160"></mx:ComboBox>
+					</mx:FormItem>
+					<mx:FormItem label="District/Club:"  id="districtItem">
+						<mx:TextInput id="district"/>
+					</mx:FormItem>
+					<mx:FormItem label="Topic:"  id="topicItem">
+						<mx:TextInput id="topic"/>
+					</mx:FormItem>
+					<mx:FormItem label="Meal:" width="252" id="mealItem">
+						<mx:ComboBox id="formGuestMeal" dataProvider="{dataMealCodes}" width="160" labelField="MealCode"></mx:ComboBox>
+					</mx:FormItem>
+				</mx:Form>
+				</mx:AddChild>
+		<mx:SetProperty name="width" value="608"/>
+		<mx:SetProperty name="height" value="280"/>
+		<mx:SetProperty target="{btnCancel}" name="x" value="300"/>
+		<mx:SetProperty target="{btnCancel}" name="y" value="208"/>
+		<mx:SetProperty target="{btnAddGuest}" name="x" value="207"/>
+		<mx:SetProperty target="{btnAddGuest}" name="y" value="208"/>
+		<mx:SetProperty target="{rightPanel}" name="width" value="324"/>
+		<mx:SetProperty target="{rightPanel}" name="height" value="171"/>
+		<mx:SetProperty target="{mainPanel}" name="height" value="171"/>
+		<mx:SetStyle name="borderColor" value="#EAF497"/>
+		<mx:SetStyle name="backgroundColor" value="#05043F"/>
+		<mx:SetProperty name="alpha" value="1.0"/>
+		<mx:SetStyle target="{btnAddGuest}" name="fillAlphas" value="[1.0, 1.0]"/>
+		<mx:SetStyle target="{btnAddGuest}" name="fillColors" value="[#C9DA09, #C9DA09]"/>
+		</mx:State>
+		
+		<mx:State name="GuestOfMemberView" basedOn="BasicGuestView">
+		<mx:RemoveChild target="{districtItem}"/>
+		<mx:RemoveChild target="{topicItem}"/>
+		<mx:SetProperty target="{form1}" name="height" value="131"/>
+		</mx:State>
+		
+		<mx:State name="RotarianGuestView" basedOn="BasicGuestView">
+		<mx:RemoveChild target="{guestItem}"/>
+		<mx:RemoveChild target="{topicItem}"/>
+		<mx:SetProperty target="{form1}" name="height" value="131"/>
+		</mx:State>
+		
+		<mx:State name="ClubGuestView" basedOn="BasicGuestView">
+		<mx:RemoveChild target="{guestItem}"/>
+		<mx:RemoveChild target="{districtItem}"/>
+		<mx:SetProperty target="{form1}" name="height" value="131"/>
+
+		</mx:State>
+	</mx:states>
+	<mx:Panel x="10" y="10" width="236" height="148" layout="absolute" title="Guest Type:" backgroundColor="#FFFFFF" 
+		borderStyle="solid" cornerRadius="4" borderColor="#F0BD20" id="mainPanel"> 
+		<mx:RadioButtonGroup id="guestRadioGroup"/>
+		<mx:RadioButton x="10" y="10" label="Guest of Member" groupName="guestRadioGroup" click="this.currentState='GuestOfMemberView'" selected="true"/>
+		<mx:RadioButton x="10" y="36" label="Rotarian Guest" groupName="guestRadioGroup" click="this.currentState='RotarianGuestView'"/>
+		<mx:RadioButton x="10" y="62" label="Guest of Club (e.g. Speaker)" groupName="guestRadioGroup" click="this.currentState='ClubGuestView'"/>
+	</mx:Panel>
+	<mx:Panel x="254" y="10" width="310" height="148" layout="absolute" title="Guest Information:" 
+		borderStyle="solid" cornerRadius="4" id="rightPanel"> 
+		
+	</mx:Panel>
+	<mx:Button x="206" y="180" label="Add Guest" click="addGuest()" id="btnAddGuest"/>
+	<mx:Button x="299" y="180" label="Cancel" click="cancel()" id="btnCancel"/>
+	<mx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			import mx.events.CloseEvent;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+
+		[Bindable]
+		public var guest:Members;
+		[Bindable]
+		public var dataMealCodes:ArrayCollection = new ArrayCollection();
+		[Bindable]
+		public var dataGuestNames:ArrayCollection = new ArrayCollection();
+		public function loadMealCodes(mc:ArrayCollection):void {
+			dataMealCodes = mc;
+			//formGuestMeal.dataProvider = mc;
+		}
+		public function loadGuestNames(names:ArrayCollection):void {
+			//Note: Make sure Guest names have been filtered out by this point
+			dataGuestNames = names;
+			//formGuestOfMember.dataProvider = names;
+		}
+			private function init():void {
+				wasCanceled = false;
+				//guest = new Members();
+				//guest.
+				this.addEventListener(CloseEvent.CLOSE, close);
+			}
+			
+			//gather data
+			private function addGuest():void {
+				wasCanceled = false;
+				
+				guest.MealCode = formGuestMeal.selectedItem.MealCodeID;
+				if(currentState == "GuestOfMemberView") {
+					guest.GuestCode = 1;
+					guest.UserID = formGuestOfMember.selectedItem.UserID;
+					guest.UserName = this.formGuestName.text+" ("+formGuestOfMember.selectedItem.UserName+")"; //TODO fix
+       				//UserID = UserID of member selected
+					guest.Notes = formGuestName.text;					
+
+				} else if (currentState == "RotarianGuestView") {
+					guest.GuestCode = 2;	
+					guest.UserID = 0;
+					guest.UserName = this.formGuestName.text;
+					guest.Notes = formGuestName.text+"|"+district.text;
+
+				} else if (currentState == "ClubGuestView") {
+					guest.GuestCode = 3;
+					guest.UserID = 0;
+					guest.UserName = this.formGuestName.text;
+					guest.Notes = formGuestName.text+"|"+topic.text;
+				}
+				
+				
+				guest.MemberType = "Guest";
+				guest.boolAttended = true;
+				guest.Attended = "Y";
+				guest.ClubAttendanceID = 0; //to signal "insert" to DB
+				guest.MemberTypeID = 0;
+				PopUpManager.removePopUp(this);
+				//this.dispatchEvent(new CloseEvent("guest"));
+				
+			}
+			
+			private function cancel():void {
+				wasCanceled = true;
+				PopUpManager.removePopUp(this);
+//				this.dispatchEvent(CloseEvent);
+			}
+
+			private function close(event:CloseEvent):void {
+				cancel();
+			}
+		]]>
+	</mx:Script>
+	<mx:Style source="assets/Rotary.css"/>
+</mx:TitleWindow>

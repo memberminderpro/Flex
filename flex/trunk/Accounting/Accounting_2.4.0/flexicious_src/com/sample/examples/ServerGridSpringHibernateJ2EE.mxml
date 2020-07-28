@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:grids="com.flexicious.grids.*" xmlns:columns="com.flexicious.grids.columns.*" xmlns:mate="http://mate.asfusion.com/" width="100%" creationComplete="onCreationComplete()">
+
+	<mx:RemoteObject id="j2eeRemoteObject" showBusyCursor="true" destination="blazeds" source="flexService">
+		<mx:method name="getEmployees" result="onEmployeesResult(event)"/>
+		<mx:method name="getAllDepartments" result="onDepartmentsResult(event)"/>
+	</mx:RemoteObject>
+
+	<mx:Script>
+		<![CDATA[
+			import com.sample.model.MyFilterSort;
+			import com.flexicious.grids.filters.FilterSort;
+			import mx.events.CollectionEvent;
+			import mx.events.DataGridEvent;
+			import com.flexicious.utils.UIUtils;
+			import mx.controls.advancedDataGridClasses.AdvancedDataGridColumn;
+			import mx.events.IndexChangedEvent;
+			import com.flexicious.controls.MultiSelectComboBox;
+			import com.sample.model.MyFilter;
+			import com.sample.examples.support.SalaryRangeSlider;
+			import com.sample.model.EmployeeGenerator;
+			import com.sample.model.Employee;
+			import com.flexicious.utils.DateRange;
+			import mx.collections.ArrayCollection;
+			import mx.rpc.events.ResultEvent;
+			import com.flexicious.grids.filters.Filter;
+			import com.flexicious.grids.events.FilterPageSortChangeEvent;
+			import com.flexicious.grids.filters.FilterExpression;
+			import com.sample.SampleUIUtils;
+
+
+			//we get this list from server on initial load
+			[Bindable()]
+			private var _serverDepartments:ArrayCollection;
+			[Bindable()]
+			private var _totalRecords:int;
+
+			//fire off the server call on initial load
+			private function onCreationComplete():void
+			{
+				//for the grid bound to the server, 
+				//just get the first page of employees
+				var filter:MyFilter=new MyFilter(null);
+				filter.pageIndex=0;
+				filter.pageSize=dgEmployeesServer.pageSize;
+				var filtersort:FilterSort = new FilterSort();
+				filtersort.sortColumn="firstName";
+				filtersort.isAscending=false;
+				filter.sorts.addItem(new MyFilterSort(filtersort));
+
+				//this will get the list of all departments
+				j2eeRemoteObject.getAllDepartments();
+				//just get the first page initially...
+				j2eeRemoteObject.getEmployees(filter);
+
+
+			}
+
+			//This event is fired when the user changes the sort, page or filter 
+			private function onFilterPageSortChange(event:FilterPageSortChangeEvent):void
+			{
+				var dataGridEvent:DataGridEvent = event.triggerEvent as DataGridEvent;
+				//here we build our custom filter object and send it to the server
+				j2eeRemoteObject.getEmployees(new MyFilter(event.filter));
+			}
+
+			//Function to call when server call returns.
+			private function onEmployeesResult(event:ResultEvent):void
+			{
+				//the java service just sends back the page to display, and the total records.
+				//what you send back from your service will need to reflect in the below
+				//two lines of code.
+				dgEmployeesServer.totalRecords=event.result.totalRecords;
+				//The service also tells us how many records match the filter, so we can draw the pager...
+				dgEmployeesServer.dataProvider=event.result.records as ArrayCollection;
+				_totalRecords=event.result.totalRecords;
+				//We display the count in the footer, so we set it here and redraw the footer to reflect the updated count. 
+				dgEmployeesServer.footerRow.redrawFooter();
+			}
+
+			private function onDepartmentsResult(event:ResultEvent):void
+			{
+
+				_serverDepartments=new ArrayCollection(event.result.source);
+				//we need to call this to rebuild the filter row on
+				//basis of updated data from the server.	
+				dgEmployeesServer.refreshLayout();
+			}
+
+			// Callback function that highlights in red 
+			// all rows for >75,000
+			public function myStyleFunc(data:Object, col:AdvancedDataGridColumn):Object
+			{
+				if (data["annualSalary"] > 75000)
+					return {color:0xFF0000};
+				return null;
+			}
+		]]>
+	</mx:Script>
+	<mx:HBox width="100%">
+		<mx:Label text="# Selected Ids: {dgEmployeesServer.selectedKeys.length}"/>
+		<mx:Spacer width="100%"/>
+		<mx:Button label="View Explanation For Example" click="UIUtils.openBrowserPopup('http://www.flexicious.com/Home/FlexDataGridPagingFilterServer',
+		'width=1024,height=768,lef t=0,top=0, toolbar=No,location=No,scrollbars=Yes,status=No,resizable=No,fullscreen=No')"/>
+	</mx:HBox>
+
+	<!--Datagrid with filterPageSortMode = server (Only the first page is loaded from the server (see onCreationCompelete.
+		 The grid then fires filterPageSortChange when the user requests another page or sort or filter.
+		 This is then handled by the server call and data is bound on server call return. See onFilterPageSortChange))-->
+	<mx:TextArea width="100%" text="This example shows a Classic Datagrid bound to a J2EE/BLAZE DS/SPRING/HIBERNATE backend. The Java code is included in the Trial download. It demonstrates construction of dynamic HQL on basis of the Flexicious Filter object."/>
+	<grids:ExtendedDataGrid showSpinnerOnFilterPageSort="true" enableFilters="true" enableCopy="true" enableFooters="true" initialSortField="firstName" 
+		enablePaging="true" id="dgEmployeesServer" height="271" pagerPosition="bottomMiddle"  
+		pageSize="20" filterPageSortMode="server" filterPageSortChange="onFilterPageSortChange(event)" 
+		width="100%" filterRowHeight="30" enablePreferencePersistence="true" preferencePersistenceKey="serverGridSpringHibernateJ2EE1" pagerRenderer="com.sample.examples.support.CustomPagerControl" initialSortAscending="false">
+		<grids:columns>
+			<columns:SelectAllCheckBoxHeaderColumn width="15" selectedKeyField="employeeId"/>
+			<columns:ExtendedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Equals" filterRenderer="com.sample.examples.support.controls.NumericTextInput"/>
+			<columns:ExtendedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Department" dataField="department" filterOperation="Equals" searchField="department.departmentId" sortField="department.departmentName" filterRenderer="{com.flexicious.utils.UIUtils.createRenderer
+									(com.flexicious.controls.MultiSelectComboBox, 
+					{labelField:'departmentName',dataField:'departmentId',
+					dataProvider:_serverDepartments,dropdownWidth:150}) 
+				}"/>
+			<columns:ExtendedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox"/>
+			<columns:ExtendedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,
+		DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150"/>
+			<columns:ExtendedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" footerLabel="Count: {_totalRecords}" filterRenderer="com.sample.examples.support.SalaryRangeSlider"/>
+			<!--Note the usage of the SalaryRangeSlider above. This is used to create a cutom filter control.-->
+		</grids:columns>
+	</grids:ExtendedDataGrid>
+</mx:VBox>

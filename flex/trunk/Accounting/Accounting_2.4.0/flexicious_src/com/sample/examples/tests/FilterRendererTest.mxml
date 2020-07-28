@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:grids="com.flexicious.grids.*" 
+	xmlns:columns="com.flexicious.grids.columns.*" 
+	xmlns:mate="http://mate.asfusion.com/" 
+	width="100%" creationComplete="onCreationComplete()">
+	<mx:Script>
+		<![CDATA[
+			import com.sample.examples.support.FilterComboBox;
+			import com.flexicious.utils.UIUtils;
+			import com.sample.examples.support.AutoComplete;
+			import com.sample.examples.support.MyComboBox;
+			import com.sample.model.Employee;
+			import com.flexicious.controls.ComboBox;
+			import com.flexicious.utils.DateRange;
+			
+			private function onCreationComplete():void
+			{
+				dgEmployees.setFilterValue("departmentParameterized","IT",false);
+				dgEmployees.validateNow(); 
+				dgEmployees.processFilter();
+			}
+		]]>
+	</mx:Script>
+	<mx:HBox width="100%">
+		<mx:Label text="# Selected Ids: {dgEmployees.selectedKeys.length}"/>
+		<mx:Spacer width="100%"/>
+		<mx:Button label="View Explanation For Example" click="UIUtils.openBrowserPopup('http://www.flexicious.com/Home/FilterRendererProperties',
+		'width=1024,height=768,lef t=0,top=0, toolbar=No,location=No,scrollbars=Yes,status=No,resizable=No,fullscreen=No')"/>
+	</mx:HBox>
+	<mx:TextArea width="100%"  text="This example shows how to 1) Initialize filter renderers with default properties (createRenderer). 2) Different Modes for list based filters"/>
+	<grids:ExtendedDataGrid dataProvider="{Employee.getAllEmployees()}" enableFilters="true" enableCopy="true" 
+		enableFooters="true" enablePaging="true" id="dgEmployees" height="271" pagerPosition="bottomMiddle" pageSize="15" width="100%"
+		enablePreferencePersistence="true" preferencePersistenceKey="filterRendererPropertiesGrid" pagerRenderer="com.sample.examples.support.CustomPagerControl">
+		<grids:columns>
+			<columns:SelectAllCheckBoxHeaderColumn width="15" selectedKeyField="employeeId"/>
+			<columns:ExtendedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput" />
+
+			<columns:ExtendedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+
+			<!--Here we're using a parameterized class factory to pass in properties for our dynamically created filter renderers-->
+			<columns:ExtendedDataGridColumn headerText="Department (Parameterized)" dataField="departmentParameterized" 
+				filterOperation="Equals" 
+				filterRenderer="{com.flexicious.utils.UIUtils.createRenderer
+				(FilterComboBox,{rendererStyleName:'solidBorder'})}" 
+				filterComboBoxBuildFromGrid="true" filterComboBoxWidth="150"/>
+				
+		</grids:columns>
+	</grids:ExtendedDataGrid>
+</mx:VBox>

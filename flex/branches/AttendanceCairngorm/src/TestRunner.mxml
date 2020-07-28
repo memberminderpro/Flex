@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication 
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:flexunit="flexunit.flexui.*" 
+    creationComplete="onCreationComplete()"
+    height="600" width="1000"
+>    
+    <mx:Script>
+        <![CDATA[
+            import test.MemSelTest; 
+            import test.AddGuestTest;       
+            private function onCreationComplete():void
+            {
+                testRunner.test = AddGuestTest.suite();
+                testRunner.startTest();
+            }
+        ]]>
+    </mx:Script>    
+    <flexunit:TestRunnerBase id="testRunner" width="100%" height="100%" />
+</mx:WindowedApplication>

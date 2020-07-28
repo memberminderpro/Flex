@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" title="Invoice" fontSize="12" 
+	creationComplete="popUpInit()" creationPolicy="all" close="removeDetail()" showCloseButton="true" 
+	borderAlpha="1" backgroundColor="#A5AEB8" borderColor="#CCCCCC" width="608" height="386">
+	<mx:states>
+		<mx:State name="Add">
+			<mx:AddChild relativeTo="{canvas1}" position="lastChild">
+					<mx:Button label="Add" id="btnAddInvoice" width="71" x="219" y="300" click="addInvoice()"/>
+			</mx:AddChild>
+			<mx:SetStyle name="borderColor" value="#E8E8E8"/>
+		</mx:State>
+		<mx:State name="Edit">
+			<mx:AddChild relativeTo="{canvas1}" position="lastChild">
+				<mx:Button label="Update" id="btnUpdate" width="77" x="218" y="300" click="updateInvoice()"/>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="Delete">
+			<mx:AddChild relativeTo="{canvas1}" position="lastChild">
+				<mx:Button label="Delete" fillAlphas="[1.0, 1.0]" fillColors="[#FB9D9D, #FB9D9D]" x="214" y="300" width="81" click="deleteInvoice()"/>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+<mx:Canvas  width="579" height="336"
+	backgroundColor="#F9ECC4" borderStyle="solid" cornerRadius="4" borderColor="#F0BD20" id="canvas1">
+	<mx:Label x="5" y="35" text="Invoice Date:" fontSize="12"/>
+	<mx:DateField x="100" y="35" editable="true" id="dtInvoice"/>
+	<mx:Label x="10" y="70" text="Period:" fontSize="12"/>
+	<mx:TextInput x="100" y="70" width="120" maxChars="10" editable="true" enabled="true" id="selPeriod"/>
+	<mx:Label x="10" y="100" text="Due Date:" fontSize="12"/>
+	<mx:DateField x="100" y="100" editable="true" id="dtDue"/>
+	<mx:Label x="10" y="140" text="Description" fontSize="12"/>
+	<mx:TextInput x="100" y="140" editable="true" enabled="true" width="467" id="selDescript" maxChars="48"/>
+	<!--mx:CheckBox x="382" y="35" label="Include Zero Amounts?" fillAlphas="[1.0, 1.0]" fillColors="[#F3F0F0, #F3F0F0]" id="chkbxInclude"/-->
+	<!--mx:CheckBox x="382" y="70" label="Use Cash Basis (Proforma)?" id="chkbxProforma"/-->
+	<mx:TextArea x="100" y="185" width="467" height="78" id="message" maxChars="200" wordWrap="true"/>
+	<mx:Label x="10" y="186" text="Message:"/>
+	<mx:Button label="Cancel" x="303" y="300" click="removeDetail()"/>
+</mx:Canvas>
+<mx:Script>
+	<![CDATA[
+		import mx.collections.ArrayCollection;
+		import mx.managers.PopUpManager;
+		import Invoice;
+		import InfusionGrp.Invoices;
+		
+		[Bindable]
+		public var dataRec:Object;
+		
+		public var clubMain:Invoice;
+		public var clubID:int;
+		public var region:int;
+		private function popUpInit():void
+		{
+			PopUpManager.centerPopUp(this);
+			if(currentState != "Add")			// Fill in form
+			{
+				dtInvoice.selectedDate = new Date(dataRec.InvoiceDate);
+				dtDue.selectedDate = new Date(dataRec.DueDate);
+				selPeriod.text = dataRec.Period;
+				selDescript.text = dataRec.Description;
+				//chkbxInclude.selected = (dataRec.IncZeroAmts =="Y") ? true : false;
+				//chkbxProforma.selected = (dataRec.IsProforma =="Y") ? true : false;
+				message.text = dataRec.Message;
+			}
+			else if(currentState == "Add") 
+			{
+				dtInvoice.selectedDate = new Date();
+				dtDue.selectedDate = new Date();
+			}
+			
+			//TODO alert end user if invoice has selected members in it
+		}
+		private function removeDetail():void
+		{
+			PopUpManager.removePopUp(this);
+		}
+		private function addInvoice():void
+		{
+			var _invoice:Invoices = new Invoices();
+			var d:Date = new Date();
+			_invoice.Period = selPeriod.text;
+			_invoice.InvoiceDate = dtInvoice.selectedDate;
+			_invoice.DueDate = dtDue.selectedDate;
+			_invoice.ClubID = clubID;
+			_invoice.AccountID = region;
+			_invoice.Description = selDescript.text;
+			//_invoice.IncZeroAmts = (chkbxInclude.selected) ? "Y" : "N";
+			//_invoice.IsProforma = (chkbxProforma.selected) ? "Y" : "N";
+			_invoice.DatePosted = "";
+			_invoice.InvoiceGrp = "INV-t1";
+			_invoice.IsPosted = "N";
+			//_invoice.Amount = ;
+			_invoice.Message = message.text;
+			clubMain.remoteCFC.Create(_invoice, "N");		// Continue on Error
+			removeDetail();
+		}
+		private function updateInvoice():void
+		{
+			var _invoice:Invoices = new Invoices();
+			
+			_invoice.Period = selPeriod.text;
+			_invoice.InvoiceDate = dtInvoice.selectedDate;
+			_invoice.DueDate = dtDue.selectedDate;
+			_invoice.DatePosted = (dataRec.DatePosted == null) ? "" : dataRec.DatePosted;
+			_invoice.ClubID = clubID;
+			_invoice.AccountID = region;
+			_invoice.Description = selDescript.text;
+			//_invoice.IncZeroAmts = (chkbxInclude.selected) ? "Y" : "N";
+			//_invoice.IsProforma = (chkbxProforma.selected) ? "Y" : "N";
+			_invoice.InvoiceGrp = dataRec.InvoiceGrp;
+			_invoice.InvoiceGrpID = dataRec.InvoiceGrpID;
+			_invoice.IsPosted = "N";
+			_invoice.Amount = dataRec.Amount;
+			_invoice.Message = message.text;
+			clubMain.remoteCFC.Update(_invoice, "N");		// Continue on Error
+			removeDetail();
+		}
+		private function deleteInvoice():void
+		{
+			var _invoice:Invoices = new Invoices();
+			_invoice.InvoiceGrp = dataRec.InvoiceGrp;
+			_invoice.InvoiceGrpID = dataRec.InvoiceGrpID;
+			//TODO first check that no charge items are left in invoice
+			clubMain.remoteCFC.Delete(_invoice, "N");
+			removeDetail();
+		}
+	]]>
+</mx:Script>
+</mx:TitleWindow>

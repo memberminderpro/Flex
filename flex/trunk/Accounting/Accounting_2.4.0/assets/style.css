@@ -1,0 +1,175 @@
+
+
+
+Application
+{
+	font-family:				arial;
+    font-size: 					11;
+	color: 						#000000;
+	background-color: 			#FFFFFF;
+	font-weight:				normal;
+	
+}
+DataGrid {
+	headerStyleName: 			"mydataGridHeaderStyle";
+	font-family:				arial;
+    font-size:					11;
+   	color:						#000000;
+	text-roll-over-color:		#000000;
+	text-selected-color:		#000000;
+	roll-over-color:			#e4e4e4;
+	selection-color:			#cdcdcd;
+	alternating-item-colors:	#f8f8f8, #ffffff;
+}
+
+
+Button
+{
+   font-family:				arial;
+   font-weight:				normal;
+   font-size:				11;
+}
+
+
+PrintDataGrid {
+	headerStyleName: 			"mydataGridHeaderStyle";
+}
+PrintAdvancedDataGrid {
+	headerStyleName: 			"mydataGridHeaderStyle";
+}
+
+
+AdvancedDataGrid {
+	headerStyleName: 			"mydataGridHeaderStyle";
+	font-family:				arial;
+	font-size:					11;
+   	color:						#000000;
+	text-roll-over-color:		#000000;
+	text-selected-color:		#000000;
+	roll-over-color:			#e4e4e4;
+	selection-color:			#cdcdcd;
+	alternating-item-colors:	#f8f8f8, #ffffff;
+}
+.mydataGridHeaderStyle {
+   textAlign: 				left;
+   color:					#000000;
+   font-family:				arial;
+   font-weight:				normal;
+   font-size:				11;
+}
+ComboBox
+{
+	font-family: 			arial;
+	font-weight:			normal;
+}
+MultiSelectComboBox
+{
+	font-family: 			arial;
+	font-weight:			normal;
+}
+PopUpButton
+{
+	font-family: 			arial;
+	font-weight:			normal;
+}
+TitleWindow
+{
+	font-family:			arial;
+	font-size:				11;
+	font-weight:			normal;
+	color:					#000000;
+	border-thickness:		0;
+	title-style-name:		"titleStyle";
+	borderAlpha:0.9;
+}
+Panel
+{
+	font-family:			arial;
+	font-size:				11;
+	font-weight:			normal;
+	color:					#000000;
+	border-thickness:		0;
+	title-style-name:		"titleStyle";
+	borderAlpha:0.9;
+}
+.titleStyle
+{
+	font-family:		arial;
+	font-size:			12;
+	font-weight:		normal;
+	color:				#000000;
+}
+
+Accordion
+{
+	border-color:			#cfcfcf;
+	background-color:		#f3f3f3;
+}
+
+
+AccordionHeader
+{
+	header-height:			22;
+	border-style:			solid;
+	font-family:			arial;
+	color:					#3F3F3F;
+	font-size:				11;	
+	font-weight:		bold;
+}
+ImageButton
+{
+	overBorderColor:	#6F6F6F;
+}
+TabNavigator
+{
+	font-family:					arial;
+	font-size:						11;
+	font-weight:					normal;
+	border-color:					#cbcbcb;
+	color:							#333333;
+	tab-style-name:					"tabNavigatorTab";
+	selected-tab-text-style-name:	"tabNavigatorSelectedText";
+	horizontalGap:	1
+	
+}
+
+
+.tabNavigatorTab
+{
+	font-weight: 		normal;
+	font-family:		arial;
+	font-size:			11;
+	color:				#333333;
+	border-color: 		#c0c0c0;
+}
+
+
+.tabNavigatorSelectedText
+{
+	roll-over-color:	#333333;
+	font-weight: 		normal;
+	font-family:		arial;
+	font-size:			11;
+	color:				#000000;
+}	
+		
+
+ExtendedDataGrid
+{
+footer-background-color: #CFCFCF;
+filter-background-color: #AFAFAF;
+pager-background-color: #EFF1F2;
+
+
+filter-border-sides: "none";
+filter-border-color: red;
+filter-border-thickness:2;
+}
+ExtendedAdvancedDataGrid
+{
+filter-border-sides: "none";
+footer-background-color: #CFCFCF;
+filter-background-color: #AFAFAF;
+pager-background-color: #EFF1F2;
+}
+

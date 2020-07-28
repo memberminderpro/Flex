@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DepositAccountsSelectorComponent xmlns="com.infusion.accounting.components.editors.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="250" height="100%" xmlns:local="*">
+	
+		<mx:Label text="{_registerItem.GL_Account}" width="100%" toolTip="{_registerItem.GL_AccountID}"/>
+    	<!--mx:PopUpButton id="popUpButtonErrors" icon="@Embed(source='../assets/images/folder_table.png')"
+					label="{_registerItem.GL_Account}" 
+					toolTip="Select account to credit"
+					openAlways="true" 
+					width="25" >
+					
+			<mx:popUp>
+				<local:popUpAccounts puAcct="{_model.accountsXML}" 
+					curAccount="{_registerItem.GL_Account}" 
+					callBack="AcctData"
+					 />
+			</mx:popUp>
+		</mx:PopUpButton-->
+		<mx:Button icon="@Embed(source='../assets/images/folder_table.png')"
+			toolTip="Select account to credit"
+			click="selectAccount()"/>		
+    	
+  <mx:Script>
+   <![CDATA[
+   	import com.infusion.accounting.models.AppModelLocator;
+   	import accounts.Register;
+   	import accounts.RegisterDAO;
+   	import accounts.RegisterItem;
+   	import mx.managers.PopUpManager;
+   	import mx.controls.Alert;
+
+    [Bindable] public static var _model:AppModelLocator = AppModelLocator.getInstance();
+   	
+   	//private var _data:Object = null;
+    override public function set data(o:Object):void
+    {
+       //super.data = o; //This is a register item!
+       //_data = o;
+       trace("--SetData0: "+o);
+       //Fix it temporarily because we don't have dFlag or RefNum on backend now
+//       if(_registerItem == null){
+       try {
+       	  _registerItem = RegisterItem.castToRegisterItem(o);
+       	  trace("--SetData1: "+_registerItem);
+       } catch(e:Error) {
+          trace("Expected RegisterItem, got : "+o);
+          _registerItem = new RegisterItem();
+       }
+
+
+//       }
+       
+     }
+     
+     override public function get data():Object {
+     	trace("GetData: "+_registerItem);
+     	return _registerItem;
+     }
+     
+     
+     
+     /**
+     * Copied from CheckEntry.mxml
+     * TODO make more generic
+     * */
+ 	private function selectAccount():void
+	{
+		//TW TODO why setting this here?
+		//_registerItem.GL_Account = "-- Member Dues --";
+		//_registerItem.GL_AccountID = 0;
+		
+		var popAccts:popUpAccounts = popUpAccounts(PopUpManager.createPopUp(this, popUpAccounts, true));
+		popAccts.puAcct = _model.accountsXML;
+		popAccts.curAccount = _registerItem.GL_Account; //TODO how to tell which acct FROM?
+		popAccts.callBack = AcctData;
+			
+	}
+	 
+		// Local function to handle callback
+		public function AcctData(x:XML):void
+		{	
+			_registerItem.GL_Account = x.@Label;
+			_registerItem.GL_AccountID = x.@ID;
+			_registerItem.GL_AccountTypeID = x.@GL_AccountType;
+			trace("-Select Account: "+x.toXMLString());
+			trace("-Select Account: "+_registerItem);
+		}
+ 
+   ]]>
+ </mx:Script>
+ 
+
+	
+</DepositAccountsSelectorComponent>

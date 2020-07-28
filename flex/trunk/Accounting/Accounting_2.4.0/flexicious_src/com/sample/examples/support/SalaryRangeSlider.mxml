@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HSlider xmlns:mx="http://www.adobe.com/2006/mxml" thumbCount="2" creationComplete="onCreationComplete()"  
+implements="com.flexicious.controls.interfaces.filters.IRangeFilterControl" change="sliderChange(event)"
+dataTipPlacement="top" 
+            tickColor="black" 
+            snapInterval="10000" tickInterval="10000" 
+            labels="['0','100,000']" 
+            allowTrackClick="true" >
+	 <mx:Script source="../../includes/FilterInclude.as" />
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+		
+			private var _minSalary:Number=0;
+			private var _maxSalary:Number=100000;
+			
+			private var _salaryFrom:Object=null;
+			private var _salaryTo:Object=null;
+			
+			
+			import mx.events.SliderEvent;
+			import mx.controls.sliderClasses.Slider;
+			private function sliderChange(event:SliderEvent):void {
+				//if maximum is set, we also need to set min (if not set) and vice versa, because 
+				//the filtering mechanism needs both values.
+				if(event.thumbIndex==0){
+					_salaryFrom=event.value;
+					if(_salaryTo==null)_salaryTo=_maxSalary;
+				}
+				if(event.thumbIndex==1){
+					_salaryTo=event.value;
+					if(_salaryFrom==null)_salaryFrom=_minSalary;
+				}
+			}
+			private function onCreationComplete():void{
+				this.minimum=_minSalary;
+				this.maximum=_maxSalary;
+			}
+			public function get searchRangeStart():Object{
+				return  (_salaryFrom);
+			}
+			public function get searchRangeEnd():Object{
+				return  (_salaryTo);
+			}
+			public function clear():void{
+				_salaryTo=null;
+				_salaryFrom=null;
+				setThumbValueAt(0,0)
+				setThumbValueAt(1,0)
+			}
+			public function get data():Object{
+				return null;
+			}
+			public function set data(val:Object):void{
+				//do nothing... this is just to ensure we're a IDataItemRenderer.
+			}
+			
+			public function getValue():Object{
+				return (_salaryFrom!=null && _salaryTo!=null)?new ArrayCollection([_salaryFrom,_salaryTo]):null;
+				
+			}
+			private var _valuesDirty:Boolean=false;
+			public function setValue(o:Object):void{
+				if(o!=null)
+				{
+					_valuesDirty=true;
+					_salaryFrom=Number(o[0]);
+					_salaryTo=Number(o[1]);
+				}
+			}
+			protected override function commitProperties():void{	
+				super.commitProperties();
+				if(_valuesDirty){
+					_valuesDirty=false;
+					var val:ArrayCollection=getValue() as ArrayCollection;
+					values[0]=val[0] as Number;
+					values[1]=val[1] as Number;
+				}
+			}
+		]]>
+	</mx:Script>
+	
+</mx:HSlider>

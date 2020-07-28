@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:grids="com.flexicious.grids.*" 
+	xmlns:columns="com.flexicious.grids.columns.*" 
+	xmlns:mate="http://mate.asfusion.com/" 
+	width="100%" creationComplete="onCreationComplete()">
+	
+	<mx:RemoteObject id="j2eeRemoteObject" showBusyCursor="true" destination="blazeds" 
+		source="flexService">
+		<mx:method name="getAllDepartments" result="onDepartmentsResult(event)"/>
+	</mx:RemoteObject>
+	
+	<mx:Script>
+		<![CDATA[
+
+			import com.flexicious.export.ExportController;
+			import com.flexicious.print.PrintController;
+			import com.flexicious.controls.MultiSelectComboBox;
+			import com.flexicious.utils.UIUtils;
+			import mx.rpc.events.ResultEvent;
+			import com.flexicious.utils.DateRange;
+			import mx.collections.ArrayCollection;
+			import com.sample.model.Employee;
+			import mx.controls.advancedDataGridClasses.AdvancedDataGridColumn;
+			import com.sample.SampleUIUtils;
+			[Bindable()]
+			private var _serverDepartments:ArrayCollection;
+			[Bindable]
+			private var dpHierarchy:ArrayCollection = new ArrayCollection([
+			     {Region:"New York", children: Employee.allStates[0].employees},
+			     {Region:"New Jersey", children: Employee.allStates[1].employees},
+			     {Region:"Texas", children: Employee.allStates[2].employees},
+			     {Region:"California", children: Employee.allStates[3].employees},
+						]);
+			//fire off the server call on initial load
+			private function onCreationComplete():void {
+				//this will get the list of all departments
+				j2eeRemoteObject.getAllDepartments();
+			}
+			private function onDepartmentsResult(event:ResultEvent):void{
+				_serverDepartments = new ArrayCollection(event.result.source);
+				//we need to call this to rebuild the filter row on
+				//basis of updated data from the server.	
+				dgEmployees.refreshLayout();	
+			}
+			private var dpHierarchy1:ArrayCollection = new ArrayCollection([
+			  {
+			     Region:"East", children: 
+			     [
+			     {Region:"New York", children: Employee.allStates[0].employees},
+			     {Region:"New Jersey", children: Employee.allStates[1].employees}
+			     ]
+		       },  
+			  {
+			     Region:"South", children: 
+			     [
+			     {Region:"Texas", children: Employee.allStates[2].employees}
+			     ]
+		       },  
+			  {
+			     Region:"West", children: 
+			     [
+			     {Region:"California", children: Employee.allStates[3].employees}
+			     ]
+		       }  
+
+			]);
+	          // Callback function that highlights in red 
+	          // all rows for >75,000
+	          public function myStyleFunc(data:Object, 
+	            col:AdvancedDataGridColumn):Object
+	          {
+	             if (data["annualSalary"] > 75000) 
+	                return {color:0xFF0000}; 
+	             return null;      
+	          }
+      	]]>
+	</mx:Script>
+	<mx:HBox width="100%">
+		<mx:Label text="# Selected Ids: {dgEmployees.selectedKeys.length}"/>
+		<mx:Spacer width="100%"/>
+		<mx:Button label="View Explanation For Example" click="UIUtils.openBrowserPopup('http://www.flexicious.com/Home/AdvancedHierarchicalGrid',
+		'width=1024,height=768,lef t=0,top=0, toolbar=No,location=No,scrollbars=Yes,status=No,resizable=No,fullscreen=No')"/>
+	</mx:HBox>
+	<mx:TextArea width="100%"  text="This example shows a advanced grid bound to a client side collection of 466 records.(filterPageSortMode = client).(PLEASE NOTE, hierarchical data does not support paging), but filtering and footers can be used. "/>
+	<!--Advanced DataGrid with filtering. (PLEASE NOTE, hierarchical data does not support paging), but filtering and footers can be used. -->
+	<grids:ExtendedAdvancedDataGrid enablePreferencePersistence="true" preferencePersistenceKey="advancedHierarchicalGrid" pagerRenderer="com.sample.examples.support.CustomPagerControl"
+		id="dgEmployees"  enableFilters="true" enableCopy="true" 
+		enableFooters="true" enablePaging="false" forcePagerRow="true" height="271" pagerPosition="bottomMiddle" pageSize="15" width="100%"
+		styleFunction="myStyleFunc" rowHeight="25"
+		>
+        <grids:dataProvider>
+            <mx:HierarchicalData source="{dpHierarchy}"/>
+        </grids:dataProvider>
+
+		<grids:groupedColumns>
+		   <mx:AdvancedDataGridColumn dataField="Region" width="100"/>
+            <columns:ExtendedAdvancedDataGridColumn headerText="ID" dataField="employeeId" filterOperation="Contains" filterControl="TextInput"/>
+			<mx:AdvancedDataGridColumnGroup headerText="Name">   
+				<columns:ExtendedAdvancedDataGridColumn headerText="First Name" dataField="firstName" filterOperation="BeginsWith" filterControl="TextInput"/>
+				<columns:ExtendedAdvancedDataGridColumn headerText="Last Name" dataField="lastName" filterOperation="BeginsWith" filterControl="TextInput"/>
+				
+			</mx:AdvancedDataGridColumnGroup>   
+			
+			<columns:ExtendedAdvancedDataGridColumn headerText="Department" dataField="department" 
+				filterOperation="Equals"
+				filterRenderer="{UIUtils.createRenderer
+							(MultiSelectComboBox, 
+					{labelField:'departmentName',dataField:'departmentName',
+					dataProvider:_serverDepartments,dropdownWidth:150}) 
+				}" 
+				filterComboBoxWidth="150"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="Phone" dataField="phoneNumber" filterOperation="Contains" filterControl="TextInput"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="Active" dataField="isActive" filterOperation="Equals" filterControl="TriStateCheckBox"/>
+			<columns:ExtendedAdvancedDataGridColumn headerText="Hire Date" dataField="hireDate" filterControl="DateComboBox" labelFunction="SampleUIUtils.dataGridFormatDate" filterDateRangeOptions="{[DateRange.DATE_RANGE_THISQUARTER,DateRange.DATE_RANGE_LASTQUARTER,DateRange.DATE_RANGE_THISYEAR,DateRange.DATE_RANGE_LASTYEAR,DateRange.DATE_RANGE_CUSTOM]}" filterComboBoxWidth="150"
+				footerOperation="count" footerLabel="Count:" footerOperationPrecision="0"/>
+			<columns:ExtendedAdvancedDataGridColumn textAlign="right" labelFunction="SampleUIUtils.dataGridFormatCurrency" width="100" headerText="Annual Salary" dataField="annualSalary" footerOperation="average" footerLabel="Avg:" footerFormatter="{SampleUIUtils.currencyFormatterWithCents}" filterControl="NumericRangeBox"/>
+		</grids:groupedColumns>
+		
+	</grids:ExtendedAdvancedDataGrid>
+
+</mx:VBox>

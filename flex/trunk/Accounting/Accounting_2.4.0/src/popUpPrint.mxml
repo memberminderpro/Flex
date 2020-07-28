@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" title="Print Register" fontSize="12" 
+	creationComplete="popUpInit()" close="removeDetail()" showCloseButton="true"  
+	borderAlpha="1" backgroundColor="#E1EAF5" borderColor="#8FCECF" width="247" height="200" layout="absolute" color="#000000">
+	<mx:DateFormatter id="rangeFormat" formatString="MM/DD/YYYY"/><mx:Script>
+	<![CDATA[
+	import mx.managers.PopUpManager;
+    import mx.controls.Alert;
+    
+    [Bindable]
+	public var callBack:Function;
+	public var regData:SharedObject;
+	private function popUpInit():void
+	{
+		PopUpManager.centerPopUp(this);
+		regData = SharedObject.getLocal("range");
+		if(regData.data.fromDate == null)
+		{
+			rngFrom.selectedDate = new Date();			// default today
+		}
+		else
+		{
+			rngFrom.selectedDate = regData.data.fromDate;
+		}
+		if(regData.data.toDate == null)
+		{
+			rngTo.selectedDate = new Date();
+		}
+		else
+		{
+			rngTo.selectedDate = regData.data.toDate;
+		}
+	}
+	private function removeDetail():void
+	{
+		PopUpManager.removePopUp(this);
+	}
+	private function doPrint():void
+	{
+		var rangeTo:String;
+		var rangeFrom:String;
+		
+		regData.data.fromDate = rngFrom.selectedDate;
+		regData.data.toDate = rngTo.selectedDate;
+		regData.flush();
+		rangeTo = rangeFormat.format(rngTo.selectedDate);
+		rangeFrom = rangeFormat.format(rngFrom.selectedDate);
+		callBack(rangeFrom, rangeTo);
+		removeDetail();
+	}
+	]]>
+	</mx:Script>	
+	<mx:DateField x="59" y="40" id="rngFrom"/>
+	<mx:DateField x="59" y="75" id="rngTo"/>
+	<mx:Label x="59" y="10" text="Print Range"/>
+	<mx:Label x="10" y="40" text="From:"/>
+	<mx:Label x="25" y="75" text="To:"/>
+	<mx:Button x="25" y="110" label="Okay" id="btnOk" click="doPrint()"/>
+	<mx:Button x="110" y="110" label="Cancel" id="btnCancel" click="removeDetail()"/>
+</mx:TitleWindow>

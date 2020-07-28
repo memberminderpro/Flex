@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MeetingListComponent xmlns="com.infusion.attendanceoffline.views.components.meetings.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	xmlns:renderers="com.infusion.attendanceoffline.views.components.renderers.*" 
+	xmlns:utils="com.infusion.attendanceoffline.utils.*" 
+	width="100%" height="100%">
+	<mx:DataGrid id="MeetingList" dataProvider="{dataMeetingList}" click="onClick(event)" headerHeight="38" 
+		wordWrap="true" width="100%" height="166">
+		<mx:columns>
+			<mx:DataGridColumn headerText="-" dataField="Dirty" width="25"/>
+			<mx:DataGridColumn headerText="Meeting Date" dataField="MeetingDate" 
+				sortable="true" width="90" />
+			<mx:DataGridColumn headerText="Club Meeting" dataField="ClubMeeting"/>
+			<mx:DataGridColumn headerText="Online Attended" dataField="Attended" headerWordWrap="true" width="90" />
+			<mx:DataGridColumn headerText="Online Total" dataField="Total" headerWordWrap="true" width="70" />
+			
+			<mx:DataGridColumn headerText="Last Modified Locally"  dataField="LastModified" headerWordWrap="true" width="133"/>
+			<mx:DataGridColumn headerText="Last Saved to Server" dataField="LastSaved" headerWordWrap="true" width="133" />
+			
+		</mx:columns>
+	</mx:DataGrid>
+</MeetingListComponent>

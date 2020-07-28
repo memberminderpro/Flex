@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" width="750" height="502" title="Member Invoice" fontSize="12" 
+	creationComplete="popUpInit()" close="removeDetail()" showCloseButton="true" backgroundColor="#A5AEB8" borderAlpha="1" borderColor="#E8E8E8">
+	<mx:states>
+		<mx:State name="readOnly">
+			<mx:SetProperty target="{miCustomMsg}" name="editable" value="false"/>
+			<mx:SetProperty target="{dgCharges}" name="editable" value="false"/>
+			<mx:SetProperty target="{btnInvUpdate0}" name="x" value="248"/>
+			<mx:SetProperty target="{btnCancel}" name="x" value="376"/>
+			<mx:SetProperty target="{addNewItem}" name="enabled" value="false"/>
+			<mx:SetProperty target="{dgCharges}" name="enabled" value="false"/>
+			<mx:SetProperty target="{miCustomMsg}" name="enabled" value="false"/>
+			<mx:SetStyle target="{dgCharges}" name="fontStyle" value="italic"/>
+			
+		</mx:State>
+	</mx:states>
+	<mx:CurrencyFormatter  id="DollarFMT" precision="2" rounding="up" 
+		decimalSeparatorTo="." thousandsSeparatorTo="," 
+		useThousandsSeparator="true" useNegativeSign="true" currencySymbol="$" alignSymbol="left"/>
+<mx:Canvas  width="100%" height="451"
+	backgroundColor="#F9ECC4" borderStyle="solid" cornerRadius="4" borderColor="#F0BD20" id="canvas1">
+	<mx:Label x="10" y="10" text="Bill To:"/>
+	<mx:Label x="340" y="10" text="Date:"/>
+	<mx:Label x="340" y="35" text="Invoice:" id="labelInvoice"/>
+	<mx:Label x="340" y="60" text="Due Date:" id="labelDueDate"/>
+	<mx:Label x="340" y="85" text="Member Type:" id="labelMemberType"/>
+	<mx:Label x="10" y="301" text="Personal Message to: {mc.UserName}" id="labelMessage"/>
+	<mx:TextArea x="9" y="329" width="400" id="miCustomMsg" wordWrap="true" editable="true" enabled="true" 
+		maxChars="300" height="56" borderStyle="outset" text="{mc.customMsg}&#xa;"/>
+	<mx:Label x="520" y="301" text="SubTotal:" id="labelSubtotal"/>
+	<mx:Label x="520" y="329" text="Tax:" id="labelTax"/>
+	<mx:HRule x="520" y="348" width="180" height="1" strokeColor="#000000" id="hrule1"/>
+	<mx:Label x="520" y="359" text="TOTAL:" id="labelTotal"/>
+	<mx:Text x="605" y="301" width="100" id="miSubTotal" textAlign="right" text="{DollarFMT.format(subTotal)}" height="20"/>
+	<mx:Text x="605" y="329" width="100" id="miTax"  textAlign="right" text="{DollarFMT.format(Taxes)}" height="20"/>
+	<mx:Text x="605" y="359" width="100" id="miTotal" textAlign="right" text="{DollarFMT.format(TotalCharge)}" height="20"/>
+	
+	<mx:Text x="60" y="10" id="vmiName" width="272" text="{mc.UserName}"/>
+	<mx:Text x="60" y="35" id="vmiAddr1" width="272" text="{mc.Addr1}"/>
+	<mx:Text x="60" y="60" id="vmiAddr2" width="272" text="{mc.Addr2}"/>	
+	<mx:Text x="60" y="85" id="vmiCity" width="163" text="{mc.City}"/>
+	<mx:Text x="231" y="85" id="vmiState" width="30" text="{(mc.State!=null)?mc.State:mc.ProvOrOther}"/>
+	<mx:Text x="269" y="85" width="63" id="vmiZip" text="{mc.Zip}"/>
+	<mx:Text x="60" y="113" width="272" id="vmiCountry" text="{mc.CountryCode}"/>
+	<mx:Text x="440" y="10" id="vmiDate" width="137" text="{mc.InvoiceDate()}"/>
+	<mx:Text x="440" y="35" id="vmiInvoiceNum" width="137" text="{mc.InvoiceID}"/>
+	<mx:Text x="440" y="60" id="vmiDueDate" width="137" text="{mc.DueDate()}"/>
+	<mx:Text x="440" y="85" id="vmiMemberType" width="137" text="{mc.MemberType}"/>
+	<mx:Button x="585" y="85" label="Add New Item" width="120" height="22" id="addNewItem" click="addItem()" fontSize="10"/>
+			<!--mx:SetProperty target="{label2}" name="y" value="35"/>
+			<mx:SetProperty target="{label3}" name="y" value="60"/>
+			<mx:SetProperty target="{label1}" name="y" value="85"/>
+			<mx:SetProperty target="{dgCharges}" name="y" value="139"/>
+			<mx:SetProperty target="{miCustomMsg}" name="height" value="55"/>
+			<mx:SetProperty target="{label4}" name="y" value="293"/>
+			<mx:SetProperty target="{miCustomMsg}" name="x" value="10"/>
+			<mx:SetProperty target="{miCustomMsg}" name="y" value="321"/>
+			<mx:SetProperty target="{label5}" name="y" value="300"/>
+			<mx:SetProperty target="{miSubTotal}" name="y" value="300"/>
+			<mx:SetProperty target="{miSubTotal}" name="height" value="20"/>
+			<mx:SetProperty target="{label6}" name="y" value="328"/>
+			<mx:SetProperty target="{miTax}" name="y" value="328"/>
+			<mx:SetProperty target="{miTax}" name="height" value="20"/>
+			<mx:SetProperty target="{hrule1}" name="y" value="347"/>
+			<mx:SetProperty target="{label7}" name="y" value="356"/>
+			<mx:SetProperty target="{miTotal}" name="y" value="356"/>
+			<mx:SetProperty target="{miTotal}" name="height" value="20"/>
+			<mx:SetProperty target="{btnInvUpdate0}" name="x" value="260"/>
+			<mx:SetProperty target="{btnInvUpdate0}" name="y" value="393"/>
+			<mx:SetProperty target="{btnCancel}" name="x" value="388"/>
+			<mx:SetProperty target="{btnCancel}" name="y" value="393"/>
+			<mx:SetProperty target="{canvas1}" name="height" value="437"/>
+			<mx:SetProperty name="height" value="488"/>
+			<mx:SetProperty name="width" value="758"/>
+			<mx:SetStyle name="backgroundColor" value="#A5AEB8"/>
+			<mx:SetStyle name="borderColor" value="#E8E8E8"/>
+				
+			<mx:SetProperty target="{btnDelItem}" name="y" value="113"/-->
+	
+	<mx:DataGrid x="10" y="147" width="700" doubleClickEnabled="true" doubleClick="addItem()" height="146" 
+		id="dgCharges" dataProvider="{arCharges}" toolTip="Double Click To Add Item..." updateComplete="onDatagridFocusIn(event)"
+		  itemEditEnd="dgEndEdit(event)" editable="true" enabled="true" itemFocusIn="onDatagridFocusIn(event)" itemFocusOut="onDatagridFocusIn(event)">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Item Description" editable="true" width="125" dataField="ItemDescription"/>
+			<mx:DataGridColumn id="colAmt" headerText="Account" width="160" dataField="ItemInvoiceAcct"/>
+			<mx:DataGridColumn headerText="Qty" width="50" editable="true" textAlign="center" dataField="ItemQty"/>
+			<mx:DataGridColumn headerText="Rate" width="70" editable="true" textAlign="center" dataField="ItemRate"/>
+			<mx:DataGridColumn headerText="Amount" width="70" editable="false" textAlign="center" dataField="ItemInvoiceAmt"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Button x="585" y="113" label="Delete Item" id="btnDelItem" click="delItem()" enabled="false" width="120" height="22" fontSize="10" fillAlphas="[1.0, 1.0]" fillColors="[#F81818, #F4AEAE]"/>
+	<mx:Button x="585" y="10" label="Print" width="120" id="btnPrint" click="printMember()" height="22" fontSize="10"/>
+	<mx:Button x="585" y="35" label="Print Preview" id="btnPrtPreview" width="120" height="22" click="printPreview()" fontSize="10"/>
+	<mx:Button x="585" y="60" label="Pmail" width="120" height="22" id="btnPmail" click="pmailMember()" fontSize="10"/>
+	<mx:Button label="Save" width="120" id="btnInvUpdate0" click="saveInvoice()" height="22" fontSize="10" fillAlphas="[1.0, 1.0, 0.5, 0.5]" fillColors="[#FBCD2E, #FBCD2E]" x="260" y="406"/>
+	<mx:Button label="Cancel" width="120" height="22" id="btnCancel" click="removeDetail()" fontSize="10" x="388" y="406"/>
+</mx:Canvas>
+	<mx:Zoom id="zoomPU" duration="500"/>
+	<mx:RemoteObject
+    	id="PUinvoiceItemCFC" showBusyCursor="true" 
+    	destination="ColdFusion"
+    	result="PUinvoiceItemHandler(event)"
+    	fault="PUremoteError(event)"/> 
+    <mx:RemoteObject
+    	id="PUinvoiceCFC" 
+    	destination="ColdFusion"
+    	result="PUinvoiceHandler(event)"
+    	fault="PUremoteError(event)"/> 
+<mx:Script>
+	<![CDATA[
+		import mx.events.FlexEvent;
+		import mx.events.CloseEvent;
+		import InfusionGrp.GL_Invoice;
+		import InfusionGrp.InvoiceItem;
+		import InfusionGrp.ChargeItem;
+		import mx.managers.PopUpManager;
+		import InfusionGrp.MemberClass;
+		import flash.events.*;
+		import mx.events.DataGridEvent;
+		import mx.controls.listClasses.IDropInListItemRenderer;
+		import popUpAccounts;
+		import mx.rpc.events.ResultEvent;
+    	import mx.rpc.events.FaultEvent;
+    	import mx.rpc.AsyncToken;
+    	import mx.messaging.messages.RemotingMessage;
+    	import mx.controls.Alert;
+    	import mx.collections.ArrayCollection;
+    	import com.adobe.serialization.json.JSON;
+		
+		[Bindable]
+		public var mc:MemberClass;
+		[Bindable]
+		public var subTotal:String;
+		[Bindable]
+		public var arCharges:Array = new Array();
+		[Bindable]
+		public var Taxes:String;
+		[Bindable]
+		public var TotalCharge:String;
+		public var PUdsn:String;
+		public var PUendPoint:String;
+		public var PUcallback:Function;
+		private var editRowIndex:int;
+		private var editColumnIndex:int;
+		private var newCI:ChargeItem;
+		public var dgMC:DataGrid;
+		private var acctName:String;
+		private var acctList:XML;
+		private var dirtyList:Array;
+		private var dirtyFlag:Boolean;
+		private var popAccount:popUpAccounts;
+		private var pendingDeletes:ArrayCollection = new ArrayCollection();
+		public var readOnly:Boolean = false;
+		
+		private function popUpInit():void
+		{
+			var i:int, len:int;
+			var ci:ChargeItem;
+			var args:Object = {InvoiceID:null};
+			PopUpManager.centerPopUp(this);
+			acctList = this.parentApplication.xmlAcctList;
+			dirtyList = new Array();
+			dirtyFlag = false;
+
+			if(mc.Addr2 == null || (mc.Addr2 != null && mc.Addr2.length == 0))
+			{
+				mc.Addr2 = "";
+			}
+			miCustomMsg.text = (mc.customMsg != null) ? mc.customMsg : "";
+			
+			dgCharges.addEventListener(DataGridEvent.ITEM_EDIT_BEGIN, dgEditCharges);
+			PUinvoiceItemCFC.source = PUdsn + ".CFC.InvoiceItemDAO";
+			PUinvoiceItemCFC.endpoint = PUendPoint;
+			PUinvoiceCFC.source = PUdsn + ".CFC.InvoiceDAO";
+			PUinvoiceCFC.endpoint = PUendPoint;
+			args.InvoiceID = mc.InvoiceID;
+			PUinvoiceItemCFC.Lookup(args);
+			if(readOnly) {
+				currentState = "readOnly";
+			}
+		}
+		
+		private function formatAsDollar(item:Object, column:DataGridColumn):String {
+            return DollarFMT.format(item[column.dataField]);
+        }
+        
+        private function onDatagridFocusIn(e:Event):void {
+        	btnDelItem.enabled = true && !readOnly;
+        	updateAmount();
+        }
+        private function onDatagridFocusOut(e:Event):void {
+        	btnDelItem.enabled = false && !readOnly;
+        	updateAmount();
+        }
+
+		private function removeDetail():void
+		{
+			PopUpManager.removePopUp(this);
+		}
+		private function PUinvoiceItemHandler(e:ResultEvent):void
+		{
+			var i:int, len:int, rlen:int, id:int;
+			var ci:ChargeItem;
+			var obj:Object;
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		if(msgOp == "Lookup")
+    		{	
+				rlen = e.result.length;
+				arCharges = new Array();
+				for(i=0; i<rlen; i++)
+				{
+					ci = new ChargeItem(null);
+					obj = e.result[i];
+					ci.ItemAddInvoice(obj);
+					ci.addEventListener(Event.CHANGE, updateEvent);
+					arCharges.push(ci);
+				}
+				mc.Charge = arCharges;
+				updateAmount();
+				dgCharges.invalidateList();
+    		}
+    		if(msgOp == "Delete")
+    		{
+    			updateAmount();
+    			PUcallback();
+    		}
+		}
+		private function PUremoteError(e:FaultEvent):void
+		{
+			Alert.show(e.fault.faultString, "Server Error");
+		}
+		private function addItem():void
+		{
+			var ia:InvoiceItem;
+			newCI = new ChargeItem(null);
+			newCI.addEventListener(Event.CHANGE, updateEvent);
+			arCharges.push(newCI);
+			dgMC.invalidateList();	// Keep in sync with caller
+			dgCharges.dataProvider = arCharges;
+			dgCharges.scrollToIndex(arCharges.length);
+			//dgCharges.selectedIndex(arCharges.length);
+			ia = new InvoiceItem;
+			ia.Amount = 0;
+			ia.Rate = 0;
+			ia.Qty = 1;
+			ia.Tax = 0;
+			ia.Description="";
+			ia.InvoiceID = mc.InvoiceID;
+			ia.InvoiceItemID = 0;		//Create
+			newCI.ItemAddInvoice(ia);
+		//	PUinvoiceItemCFC.Create(ia);
+		}
+		private function delItem():void
+		{
+			var ts:Date;
+			var i:int, len:int, idx:int;
+			var invItem:InvoiceItem;
+			idx = dgCharges.selectedItem.ItemIndex;
+			len=arCharges.length;
+			for(i=0; i<len; i++)
+			{
+				if(idx == arCharges[i].ItemIndex)
+				{
+					invItem = arCharges[i].ItemInvoice;
+					//PUinvoiceItemCFC.Delete(invItem);
+					//Add invItem to pending delete list instead; delete only on save
+					pendingDeletes.addItem(invItem);
+					arCharges.splice(i,1);
+					dgCharges.invalidateList();
+					dgMC.invalidateList();
+					break;
+				}
+			}
+			updateAmount();
+		}
+		private function dgEditCharges(e:DataGridEvent):void
+		{
+			 // Get the name of the column being editted.
+            var colName:String = dgCharges.columns[e.columnIndex].dataField;
+                // Handle the event here.
+            editRowIndex = e.rowIndex;		//Save later update
+            editColumnIndex = e.columnIndex;
+           	e.preventDefault();
+            
+            if(colName == "ItemInvoiceAcct")
+            {
+            	dgCharges.removeEventListener(DataGridEvent.ITEM_EDIT_BEGIN, dgEditCharges);
+            	colAmt.editable = false;
+            	popAccount = popUpAccounts(PopUpManager.createPopUp(this, popUpAccounts, true));
+            	popAccount.callBack = this.saveAcct;
+            	popAccount.boundAccountsList = acctList;
+            	popAccount.addEventListener(CloseEvent.CLOSE, enableEdit);
+            	popAccount.addEventListener(FlexEvent.CREATION_COMPLETE, doEffect);
+            }
+            else
+            {
+                // Creates an item editor.
+                dgCharges.createItemEditor(e.columnIndex,e.rowIndex);
+            	IDropInListItemRenderer(dgCharges.itemEditorInstance).listData =
+           			IDropInListItemRenderer(dgCharges.editedItemRenderer).listData;
+                // Copy the cell value 
+            	dgCharges.itemEditorInstance.data = dgCharges.editedItemRenderer.data;
+            //	trace("editor: " + dgCharges.editedItemRenderer.data.ItemQty);
+            //	dgCharges.dataProvider.itemUpdated(e.itemRenderer.data);
+            }
+           
+            btnDelItem.enabled = true && !readOnly;
+            dgCharges.invalidateDisplayList();
+            updateAmount();
+		}
+		public function saveAcct(acct:XML):void
+		{   
+			dgCharges.selectedItem.ItemInvoiceAcct = acct.@Label;
+			dgCharges.selectedItem.ItemAccountID = acct.@ID;
+			dgCharges.selectedItem.ItemIsSelected = true;
+			dgCharges.invalidateList();
+			dirtyFlag = true;
+		}
+		private function enableEdit(e:Event):void
+		{
+			dgCharges.addEventListener(DataGridEvent.ITEM_EDIT_BEGIN, dgEditCharges);
+			colAmt.editable = true;
+		}
+		private function doEffect(e:Event):void
+		{
+			zoomPU.target = popAccount;
+			zoomPU.play();
+		}
+		public function updateAmount():void
+		{
+			
+			if(mc != null)
+			{
+				subTotal = mc.Total;
+				Taxes = mc.taxTotal;
+				TotalCharge = mc.chargeTotal;
+			}
+			dgMC.invalidateList();
+		}
+		private function dgEndEdit(e:DataGridEvent):void
+		{
+			dgCharges.invalidateList();
+			if(e.columnIndex == 2)
+			{
+				dgCharges.addEventListener(DataGridEvent.ITEM_EDIT_BEGIN, dgEditCharges);
+				colAmt.editable=true;
+				e.currentTarget.selectedItem.reCalc();
+			}
+			dgCharges.invalidateList();
+			updateAmount();
+			
+		}
+		/*
+			Here anytime a Charge Item changes - mark as dirty for Save
+		*/
+		public function updateEvent(e:Event):void
+		{
+			var i:int, len:int, id:int;
+			var newAmt:String;
+			var bFound:Boolean;
+		//	newAmt = e.currentTarget.ItemCalcAmt
+		//	e.currentTarget.ItemAmount = newAmt;
+			dgCharges.invalidateList();
+			e.currentTarget.ItemIsSelected = true;
+			updateAmount();
+			id = e.currentTarget.ItemIndex;
+			/*
+			len = dirtyList.length;
+			bFound = false;
+			for(i=0; i<len; i++)
+			{
+				if(id == dirtyList[i].ItemIndex)
+				{
+					bFound = true;
+					break;
+				}
+			}
+			if(bFound == false)
+			{
+				dirtyList.push(e.currentTarget);
+			}
+			*/
+		}
+		private function saveInvoice():void
+		{
+			var i:int, len:int, cLen:int, iDels:int;
+			var arSend:Array;
+			var dataString:String;
+			var invoice:GL_Invoice;
+			var dirty:Boolean;
+			dirty = false;
+			cLen = arCharges.length;
+			for (i=0; i<cLen; i++)
+			{
+				if(arCharges[i].ItemIsSelected)
+				{
+					dirtyList.push(arCharges[i]);
+					dirty = true;
+				}
+			}
+			if(mc.customMsg != miCustomMsg.text)
+			{
+				mc.customMsg = miCustomMsg.text;
+				dirty = true;
+			}
+			if(dirty)		// Modifications done
+			{
+				len = dirtyList.length;
+				arSend = new Array(len);
+				for(i=0; i<len; i++)
+				{
+					arSend[i] = dirtyList[i].ItemInvoice;
+				}
+				invoice = new GL_Invoice();
+				invoice.Amount = mc.chargeTotal;
+				invoice.UserID = mc.UserID;
+				invoice.InvoiceGrpID = mc.InvoiceGrpID;
+				invoice.InvoiceID = mc.InvoiceID;
+
+				invoice.Message = miCustomMsg.text;
+				if(len > 0)
+				{
+					invoice.InvoiceItem = arSend;
+				}
+				dataString = JSON.encode(invoice);
+		    	PUinvoiceCFC.SaveQ(dataString);
+			}
+			removeDetail();
+			//process pending item deletes
+			for(iDels=0; iDels<pendingDeletes.length; iDels++) {
+				PUinvoiceItemCFC.Delete(pendingDeletes.getItemAt(iDels));
+			}
+		}
+		private function PUinvoiceHandler(e:ResultEvent):void
+		{
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		if(msgOp == "SaveQ")
+    		{
+				PUcallback();		// Cause charges to be updated in caller
+				removeDetail();
+    		}
+		}
+		private function printMember():void
+		{
+			var url:String = PUendPoint;
+			var idx:int;
+			var request:URLRequest;
+			var urlVars:URLVariables = new URLVariables();
+			idx = url.lastIndexOf("/");
+			url = url.slice(0, idx+1);
+			url += PUdsn + "/ClubDues/printInvoice.cfm";
+			request = new URLRequest(url);
+			request.method = "GET";
+			urlVars.InvoiceID = mc.InvoiceID;
+			request.data = urlVars;
+			navigateToURL(request,'_blank');
+		}
+		private function printPreview():void
+		{
+			var url:String = PUendPoint;
+			var idx:int;
+			var request:URLRequest;
+			var urlVars:URLVariables = new URLVariables();
+			idx = url.lastIndexOf("/");
+			url = url.slice(0, idx+1);
+			url += PUdsn + "/ClubDues/PreviewInvoice.cfm";
+			request = new URLRequest(url);
+			request.method = "GET";
+			urlVars.InvoiceID = mc.InvoiceID; 
+			request.data = urlVars;
+			navigateToURL(request,'_blank');
+		}
+		private function pmailMember():void
+		{
+			var url:String = PUendPoint;
+			var idx:int;
+			var request:URLRequest;
+			var urlVars:URLVariables = new URLVariables();
+			idx = url.lastIndexOf("/");
+			url = url.slice(0, idx+1);
+			url += PUdsn + "/ClubDues/PmailInvoice.cfm";
+			request = new URLRequest(url);
+			request.method = "GET";
+			urlVars.InvoiceID = mc.InvoiceID;
+			request.data = urlVars;
+			navigateToURL(request,'_blank');
+		}		
+	
+	]]>
+</mx:Script>
+</mx:TitleWindow>

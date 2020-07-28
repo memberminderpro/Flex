@@ -1,0 +1,933 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" backgroundColor="0xE8E8E8" 
+	xmlns:grids="com.flexicious.grids.*" 
+	xmlns:columns="com.flexicious.grids.columns.*" 
+	xmlns:components="com.infusion.accounting.components.*" 
+	xmlns:commands="com.infusion.accounting.commands.*"
+	paddingTop="3" paddingLeft="3" xmlns:popup="com.adobe.cairngorm.popup.*" xmlns:local="*">
+	<mx:Style>  
+		global  
+		{ modalTransparency: 0.7; 
+		  modalTransparencyBlur: 0;}
+        .centered {
+            text-align: center;
+			fontSize: 10;
+        }
+	</mx:Style>
+	<!-- Cairngorm additions -->
+	<!--services:Services id="services"/-->
+	<commands:Controller id="controller" /> 
+	
+	<mx:VBox height="95%" width="100%">
+	<mx:HBox height="100%" width="100%">
+	<!-- Left side tree -->
+	<mx:Panel id="panel1" title="Accounts for Club {clubID}" 
+		backgroundColor="#1C17D9" borderColor="#1F259B" horizontalScrollPolicy="auto"
+		cornerRadius="0" color="#F6FCFD" 
+		width="230" height="100%" >
+		<mx:Tree  id="treeAccounts" itemClick="selectAccount(event)" iconFunction="tree_iconFunc"
+		 creationComplete="initAccount()" showRoot="false" horizontalScrollPolicy="on" labelFunction="treeLabel" color="#000000"
+		 indentation="5"
+		 height="100%"  width="100%"/>
+	</mx:Panel>
+	
+	<!-- Right side control panel and tree -->
+	<mx:VBox width="765" height="100%" minHeight="450"  dropShadowEnabled="true">
+	    <mx:Canvas width="100%" height="60" borderStyle="outset"  id="banner">
+	    	<mx:Label 	x="10"  y="3" width="448" fontSize="14" id="txAcctName" text="{_model.selectedAccountName}" fontWeight="bold"/>
+	    	<mx:Label 	x="656" y="5" id="txAcctCode" text="{'('+_model.selectedAccountCode+')'}" width="80" fontSize="12" fontWeight="bold" color="#AAAAAA"/>
+	    	<mx:Label 	x="10"  y="34" width="220" id="txMember" fontSize="11" fontWeight="bold"/>
+	    	<mx:Button 	x="496" y="33" label="New JE" id="btnNewItem" click="newRegisterEntry()" enabled="false" width="72" toolTip="Click to add a Journal Entry"/>
+	    	<mx:Button 	x="576" y="33" label="Delete " id="btnDeleteRI" click="delRegister()"
+	    		enabled="{_model.selectedRegisterLineDeletable}" visible="{(!_model.selectedRegisterLineIsLocked)}" width="76"  styleName="centered" height="22"/>
+	    	<mx:Button id="btnPrt" click="prtPopUp()" enabled="false" width="76" height="20" label="Print" verticalCenter="16" left="660" textAlign="left" icon="@Embed(source='assets/icons/printer.png')"/>
+	
+	    	<mx:Button 	x="418" y="33" label="Deposit" id="btnDeposit" click="newDepositEntry()" enabled="false" height="22" fontSize="10" toolTip="Click to record a deposit into this account"/>
+	    	<mx:CheckBox x="540" y="5" label="Show Proforma" id="chkBxProforma" click="listRegister()"/>
+	    	<mx:Button 	x="307" y="33" label="Record Check" id="btnCheck" click="newCheckEntry()" enabled="false" width="103"  labelPlacement="top" height="22" borderColor="#FAFBFC" toolTip="Click to record a check written from this account"/>
+	    </mx:Canvas>
+    	<!-- Register -->
+    	<components:RegisterComponentView dataRegister="{arRegister}" 
+    		dueDateVisible="{hasDueDate}"
+        	creditHeaderLabel="{creditHeaderText}"
+        	debitHeaderLabel="{debitHeaderText}"
+        	width="100%" height="100%"
+    	/>
+    	
+    </mx:VBox>
+	</mx:HBox>
+	
+	<mx:HBox height="25"  width="100%">
+    	<mx:Label text="District: {district}" width="99"/>
+    	<mx:Label text="ClubID: {clubID}" width="99"/>
+    	<mx:Label text="Dues Account: {duesAccount}" width="125"/>
+    	<mx:Label text="Cash: {isCash}" width="99"/>
+    	<mx:Label text="Members: {MemberCnt}" width="99"/>
+		<mx:Label text="V 2.5.9 03/10/2012" id="version" width="122"/>
+		
+	</mx:HBox>	
+	</mx:VBox>
+	
+	<!-- Popups -->
+	<!--popup:PopUpWrapper id="popupDeposit"
+    open="{(_model.selectedRegItemType == RegisterLineType.DEPOSIT)}"
+    center="true"
+    modal="true"
+    childList="{PopUpManagerChildList.POPUP}"
+  	closed="_model.selectedRegItemType = null">
+    	<local:DepositTkt r_Class="{_model.selectedRegisterLine}"
+			fEdit="false"
+			accts = "{acctList}"
+			dsn = "{dsn}"
+			endPoint = "{endPoint}"
+			duesAccount = "{duesAccount}"
+			Today = "{Today}"/>
+	</popup:PopUpWrapper-->
+    
+    <!-- Non-view declarations -->
+	<mx:CurrencyFormatter id="usdFormat" precision="2" 
+        currencySymbol="" decimalSeparatorFrom="."
+        decimalSeparatorTo="." useNegativeSign="true" 
+        useThousandsSeparator="true" alignSymbol="left" />
+	<mx:Zoom id="zoomOut" duration="500" />
+	<mx:Zoom id="zoomIn" duration="750" zoomHeightFrom="1" zoomHeightTo="0.1" zoomWidthFrom="1" zoomWidthTo="0.1"/>
+	 <mx:RemoteObject 
+    	id="accountCFC" 
+    	destination="ColdFusion"
+    	result="accountCFCHandler(event)"
+    	showBusyCursor="true"
+    	fault="CFCerror(event)"/>
+    <mx:RemoteObject
+    	id="accountTypeCFC" 
+    	destination="ColdFusion"
+    	result="accountTypeCFCHandler(event)"
+    	showBusyCursor="true"
+    	fault="CFCerror(event)"/>
+    <mx:RemoteObject
+    	id="registerCFC"
+    	showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="registerCFCHandler(event)"
+    	fault="CFCerror(event)"/> 
+    <mx:RemoteObject
+    	id="memberCFC"
+    	showBusyCursor="true"
+    	destination="ColdFusion"
+    	result="memberCFCHandler(event)"
+    	fault="CFCerror(event)"/> 
+    <mx:Script>
+    	<![CDATA[
+    		import com.infusion.accounting.components.common.popUpPost;
+    		import com.infusion.accounting.models.RegisterLineType;
+    		import mx.managers.PopUpManagerChildList;
+    		import com.infusion.accounting.models.AppModelLocator;
+    	
+//Import all the Misc BS FLEX requires    	
+        import mx.events.CollectionEvent;
+    	import mx.events.*;
+    	import mx.events.EffectEvent;
+        import mx.events.FlexEvent;
+		import mx.events.CloseEvent;
+
+		import mx.collections.XMLListCollection;
+		import mx.collections.ListCollectionView;
+        import mx.collections.ArrayCollection;
+
+    	import mx.rpc.AsyncToken;
+		import mx.rpc.events.ResultEvent;
+    	import mx.rpc.events.FaultEvent;
+
+    	import mx.messaging.messages.RemotingMessage;
+
+        import mx.controls.DateField;
+    	import mx.controls.Alert;
+
+		import mx.managers.PopUpManager;
+    	import com.adobe.serialization.json.JSON;
+
+		//A bit of cairngorm
+		[Bindable] public var _model:AppModelLocator = AppModelLocator.getInstance();
+
+//Import this application modules         
+        import popUpAccounts;
+		import popUpSplit;
+		import DepositTkt;
+		import CheckEntry;
+    	import popUpPrint;
+
+        import accounts.Register;
+        import accounts.RegisterDAO;
+	   	
+
+
+//New Public Values
+    	public var _dsn:String;						//_dsn or dsn ?? which????
+    	public var dsn:String;
+    	public var endPoint:String;
+    	[Bindable]
+    	public var clubID:int = 0;
+    	[Bindable]
+    	public var district:int = 0;
+    	[Bindable]
+    	public var duesAccount:Number = 0;
+    	[Bindable]
+    	public var isCash:String = "N";
+    	[Bindable]
+    	public var MemberCnt:Number = 0;
+    	
+    	public var debugLevel:int = 0;
+    	public var acctXML:XML;
+    	public var xmlMembers:XML;
+    	public var printReceipt:Boolean = false;
+    	
+    	//TW: for grid.  TODO move to somewhere better
+    	[Bindable]
+    	public var hasDueDate:Boolean = false;
+    	[Bindable]
+    	public var creditHeaderText:String = "Deposit";
+    	[Bindable] 
+    	public var debitHeaderText:String = "Amount";
+
+// Original Public Values
+    	[Bindable]
+    	public var arRegister:ArrayCollection = new ArrayCollection(); //of Register(DAO) items
+    	[Bindable]
+    	public var acctList:XML;						// List of Accounts passed to Split PopUp
+    	[Bindable]
+    	public var splitTotal:Number;					// Was String
+    	[Bindable]
+    	public var acctLabel:ArrayCollection;
+
+// Private Variables    	
+	   	public var Today:Date = new Date();				// Updated by pop-ups
+        private var strToday:String = DateField.dateToString(Today, "DD/MM/YYYY");
+    	private var popAccount:popUpAccounts;
+    	private var selAccount:XML;						// Current Account Record
+    	private var selAcctID:int;						// Currently Selected Account
+    	//private var selRI:RegisterDAO;					// Currently Selected Register //TW: moved to _model 
+    	private var selEntity:int;						// Currently Selected EntityID
+    	
+    	private var popSplit:popUpSplit;
+    	private var popDeposit:DepositTkt;
+    	private var popCheck:CheckEntry;
+    	private var popReg:popUpPrint;
+    	public var listArgs:Object = {GL_AccountID:null, EntityID:null, IncProforma:"N"};
+
+// Page Navigation Variables
+    	[Bindable]
+		private var navPage:int = 1;
+		private var pageSize:int = 10;
+		private var PageGLAccountID:int;
+		private var PageEntityID:int;
+    
+    	private function initAccount():void
+    	{
+    		var args:Object = {ClubID:0};
+    		
+    		_dsn = Application.application.parameters.dsn;
+        	if(_dsn != null)	// Production, parms passed in as flashvars
+        	{
+        		dsn = _dsn;
+        		endPoint = Application.application.parameters.endpoint;
+        		endPoint += "/flex2gateway";
+        		clubID = Application.application.parameters.clubID;
+        		district = Application.application.parameters.district;
+        		duesAccount = Application.application.parameters.DuesAccount;
+        		isCash = Application.application.parameters.IsCash;
+        		debugLevel = Application.application.parameters.DebugLevel;
+        	}
+        	else		// Testing
+        	{
+        		dsn = "RotaryTest.";									
+//        		endPoint = "http://76.12.226.19/";				// 1/23/09 - MRL Added
+//        		endPoint = "http://www.directory-online.com/";	// 1/23/09 - MRL Added
+        		endPoint = "http://204.12.118.204";					// 1/23/09 - MRL Added
+        		endPoint += "/flex2gateway";					// 1/23/09 - MRL Added
+
+//        		clubID = 5884;
+//       		district = 7620;								// 1/23/09 - MRL Added
+//        		duesAccount = 3832; //2733;								// 1/23/09 - MRL Added  CHANGE ON TARAHS SYSTEM
+//        		isCash = "N";									// 1/23/09 - MRL Added
+
+//        		clubID = 2389;
+//	       		district = 6080;								// 1/23/09 - MRL Added
+ //       		duesAccount = 6357; //2733;								// 1/23/09 - MRL Added  CHANGE ON TARAHS SYSTEM
+
+
+        		clubID = 2569;
+        		duesAccount = 8572; //2733;								// 1/23/09 - MRL Added  CHANGE ON TARAHS SYSTEM
+
+        		clubID = 6128;
+	       		district = 7710;								// 1/23/09 - MRL Added
+        		duesAccount = 2733; //2733;								// 1/23/09 - MRL Added  CHANGE ON TARAHS SYSTEM
+
+        		isCash = "Y";									// 1/23/09 - MRL Added
+        		debugLevel = 1;									// 1/23/09 - MRL Added
+        	}
+    		accountCFC.source = dsn + "CFC.GL_AccountDAO";
+			accountCFC.endpoint = endPoint;
+			accountTypeCFC.source = dsn + "CFC.GL_AccountTypeDAO";
+			accountTypeCFC.endpoint = endPoint;
+			registerCFC.source = dsn + "CFC.RegisterDAO";
+			registerCFC.endpoint = endPoint;
+			memberCFC.source = dsn + "CFC.GL_AccountDAO";
+			memberCFC.endpoint = endPoint;
+			
+
+// Setup Parms for Coldfusion CFC call
+			args.ClubID = clubID;
+
+// Call Coldfusion CFC here 			
+    		accountCFC.PickXML(args);			//Pass Club ID
+    		accountCFC.PickXML2(args);			//Pass Club ID
+    		accountTypeCFC.Lookup();			// Get account type array
+    		//Override to show more member entries
+    		args.Override = "Y";
+    		memberCFC.PickXMLMembers(args);		// Get club members (formerly PickClubMembers)
+
+//Initialize Register    		
+    		arRegister.removeAll();
+
+//Set the Proforma checkbox    		
+			chkBxProforma.visible = (isCash == "Y") ? true : false;
+
+//Expand the Tree
+//          openTree(duesAccount);
+    	}
+    	
+//-----------------------------------------------------------------------------------     	
+//  Accounts Selection Window functions
+//-----------------------------------------------------------------------------------     	
+		private function openTree(id:int):void {
+		var children:XMLList;
+		var i:int;
+		acctList = new XML(acctXML);							// GL_Accounts
+		children = acctList.children().children();
+		for(i=0; i<children.length(); i++)
+			{
+				if(children[i].@ID == id)
+				{
+					//Alert.show(children[i]);
+					break;
+				}
+			}
+        }
+
+		private function treeLabel(obj:Object):String
+		{
+			var id:int;
+			var lbl:String;
+			var ent:String;
+			id = obj.@EntityID;
+			lbl = obj.@Label;
+			ent = obj.@Entity;
+			return (id > 0) ? ent : lbl;
+		}
+		/*
+			tree Accounts - Account itemClick 
+			When an Account is selected on the left side, this function is invoked
+		*/
+		private function selectAccount(e:ListEvent):void
+		{
+			var x:XML;
+			var id:int, i:int;
+			var en:int;
+			var tx:String;
+			var children:XMLList;
+			x = e.currentTarget.selectedItem as XML;
+			//TW v 2.5.0 Only continue if a leaf node
+			var childAccounts:XMLList = x.descendants("Folder");
+			trace("Children? "+childAccounts.length());
+			trace("IsPosting? "+x.@IsPosting);
+			if(x.@IsPosting == "N" || childAccounts.length() > 0) {
+				var t:Tree = e.currentTarget as Tree;
+				//t.expandChildrenOf(e.currentTarget.selectedItem, true);
+				var isOpen:Boolean = t.isItemOpen(t.selectedItem);
+				t.expandItem(e.currentTarget.selectedItem, !isOpen, true);
+				return; 
+			}
+			
+			selAccount = x;											// GL_Account XML
+			tx = x.@Label;											// GL_Account
+			id = x.@ID;												// GL_AccountID
+			en = x.@EntityID;										// UserID of Member
+//Alert.show("id="+id+" duesAccount="+duesAccount);			
+			if (id == duesAccount && en == 0) {
+				Alert.show("Expand selection and select specific member");
+				return;
+			}
+//Alert.show("id=" + id + " en=" + en);
+
+//			acctType = x.@GL_AccountTypeID;							// For display mode
+			// Update Register Account / Member Information
+			_model.selectedAccountName = tx;									// Account Name
+			txMember.text = (en > 0) ? x.@Entity : "";				// Member Name (or Blank)
+			_model.selectedAccountOwnerName = txMember.text;
+//Alert.show("id=" + id);
+			// This is the logic to remove the current select account so the member can(NOT?) put the 
+			// offset entry back into the same account			 
+			acctList = new XML(acctXML);							// GL_Accounts
+			children = acctList.children().children();
+			for(i=0; i<children.length(); i++)
+			{
+				if(children[i].@ID == id)
+				{
+					delete children[i];
+					break;
+				}
+			}
+
+			selEntity = en;											// Currently selected EntityID
+			selAcctID = id;											// Currently selected AccountID
+			setGridLabels(x.@GL_AccountTypeID);						// Setup correct Debit/Credit labels based on AccountTypeID
+   			if (x.@GL_AccountTypeID < 5) {							// One of the Bank accoounts for a Deposit 
+   				btnDeposit.enabled = true;
+   				btnCheck.enabled = true;
+   			}
+   			else {	
+   				btnDeposit.enabled = false;
+   				btnCheck.enabled = false;
+   			}
+			btnNewItem.enabled = true;
+			btnPrt.enabled = true;
+
+		// ListF Function, change registerCFC handler if you call a diff function here
+			listArgs.GL_AccountID = id;
+			listArgs.EntityID = en;
+			listArgs.IncProforma = chkBxProforma.selected ? "Y" : "N";
+			listArgs.NavPage = navPage;
+			listArgs.PageSize = pageSize;
+			PageGLAccountID = id;
+			PageEntityID = en;		
+			trace("Calling ListF with: "+listArgs);	
+			registerCFC.ListF(listArgs);		//CALL ColdFusion CFC
+		}
+		
+//-----------------------------------------------------------------------------------     	
+//  Register Window functions
+//-----------------------------------------------------------------------------------     	
+		
+		// SaveQ - Save the results back - Called by PopUpSplit
+		//  08/11/08 - if prtReceipt is true -- print Deposit Receipt 
+		public function SaveQ( args:Object, prtRceipt:Boolean ):void 
+		{
+			var dataString:String;
+			var DuesAcct:int;
+			var rc:int;
+			
+			printReceipt = prtRceipt;
+			DuesAcct = duesAccount;
+			dataString = JSON.encode(args);
+			registerCFC.SaveQ2(DuesAcct,dataString);		// CALL ColdFusion RegisterDAO.SaveQ2 CFC
+    		listRegister();									// Force refresh
+	}
+
+		// Here if proforma checkbox changes.
+		public function listRegister():void 
+		{
+			listArgs.IncProforma = chkBxProforma.selected ? "Y" : "N";
+			registerCFC.ListF(listArgs);					// CALL ColdFusion RegisterDAO.ListF CFC
+		}
+		
+		//	Used table for Register Grid initialization
+		private function setGridLabels(AccountTypeID:int):void
+		{
+			var i:int, len:int;
+			i = AccountTypeID - 1, 0 ;		//acctLabel is base 0 -- adjust!
+			if (i < 0) i = 0;
+
+			//TW: Ghetto, but it works for now.  Need more insight into this...
+			if(acctLabel[i].IsDueDate) {
+				hasDueDate = true;
+			} else {
+				hasDueDate = false;
+			}
+			creditHeaderText = acctLabel[i].CreditLabel;
+			debitHeaderText = acctLabel[i].DebitLabel;
+		}
+
+		private function newBalance(e:Event):void {
+			var bal:Number = 0;
+			var n:Number;
+			
+			// Start at the top
+			for(var i:int=0; i<arRegister.length; i++)		// Do list
+			{
+				bal += arRegister.getItemAt(i).Debit;
+				bal -= arRegister.getItemAt(i).Credit;
+				n = Math.round(bal*100)/100;
+				arRegister.getItemAt(i).Balance = n;
+						
+//trace (arRegister[i].RegDate, arRegister[i].Debit, arRegister[i].Debit, arRegister[i].Credit, arRegister[i].Balance, tmp, n)				
+			}
+		}
+		
+/* -----------------------------------------------------------------------------------------
+	 Button Event
+	 btnUpdate - RegisterItems grid determine Debit or Credit based on Register value
+------------------------------------------------------------------------------------------ */
+
+	/* --- btnNewItem [NEW] Button -- Creates new register line item ---*/		
+		private function newRegisterEntry():void
+		{ 
+			var r_Class:RegisterDAO;
+			var r:Register = new Register();
+            
+			// Initialize new item 
+			r.RegisterID = 0;
+			r.RegDate = strToday;
+			r.InvoiceGrpID = 0;
+			r.RefNum = "";
+			r.Memo = "";
+			r.Description = "";
+			r.DueDate = strToday;			// Same as RegDate
+			r.EntityID = selAccount.@EntityID;
+			r.AccountCode = 0;
+			r.GL_AccountID = selAcctID;
+			r.GL_Account = selAccount.@Label;
+			r.GL_AccountTypeID = selAccount.@GL_AccountTypeID;
+			r.GL_ParentAccount = ""
+			r.bitIsCleared = false;
+			r.bitIsProforma = false;
+//			r.IsSplit = "Y";					// Was N, Always a Split Item
+			r.fEdit = 1;						// Allow Edit
+			r.Debit = Number("0.00");
+			r.Credit = Number("0.00");
+			r_Class = new RegisterDAO(r, dsn, endPoint);
+			
+			btnNewItem.enabled = false;
+			popSplit = popUpSplit(PopUpManager.createPopUp(this, popUpSplit, true));
+			popSplit.r_Class = r_Class;
+			popSplit.fEdit = false;				// NOT edit -- new
+			popSplit.accts = acctList;
+			popSplit.dsn = dsn;
+			popSplit.endPoint = endPoint;
+			popSplit.isCash = isCash;			// Added v2.0+
+			popSplit.duesAccount = duesAccount;	// Added v2.0+
+			popSplit.sEntity = findMember(r_Class.EntityID)	// Added v2.0+ Get Member Name or blank
+			popSplit.Today = Today;
+		} 
+
+		/* --- btnCheck [CHECK] Button -- Creates new Check ---*/		
+		private function newCheckEntry():void
+		{ 
+			var r_Class:RegisterDAO;
+			var r:Register = new Register();
+            
+			// Initialize new item
+			r.RegisterID = 0;
+			r.RegDate = strToday;
+			r.InvoiceGrpID = 0;
+			r.RefNum = "";
+			r.Memo = "";
+			r.Description = "";
+			r.DueDate = strToday;			// Same as RegDate
+			r.EntityID = selAccount.@EntityID;
+			r.AccountCode = 0;
+			r.GL_AccountID = selAcctID;
+			r.GL_Account = selAccount.@Label;
+			r.GL_AccountTypeID = selAccount.@GL_AccountTypeID;
+			r.GL_ParentAccount = ""
+			r.bitIsCleared = false;
+			r.bitIsProforma = false;
+			r.fEdit = 0;						// flag as new (false)
+			r.Debit = Number("0.00");
+			r.Credit = Number("0.00");
+			r_Class = new RegisterDAO(r, dsn, endPoint);
+			
+			btnCheck.enabled = false;
+			popCheck = CheckEntry(PopUpManager.createPopUp(this, CheckEntry, true));
+			popCheck.r_Class = r_Class;
+			popCheck.fEdit = false;				// NOT edit -- new
+			popCheck.accts = acctList;
+			popCheck.dsn = dsn;
+			popCheck.endPoint = endPoint;
+			popCheck.duesAccount = duesAccount;	
+			popCheck.sEntity = findMember(r_Class.EntityID)	// Added v2.0+ Get Member Name or blank
+			popCheck.Today = Today;
+		} 
+
+		/* --- btnDeposit [DEPOSIT] Button -- Creates new multi-item deposit ---*/		
+		private function newDepositEntry():void
+		{ 
+			var r_Class:RegisterDAO;
+			var r:Register = new Register();
+            
+			// Initialize new item
+			r.RegisterID = 0;
+			r.RegDate = strToday;
+			r.InvoiceGrpID = 0;
+			r.RefNum = "";
+			r.Memo = "";
+			r.Description = "";
+			r.DueDate = strToday;			// Same as RegDate
+			r.EntityID = selAccount.@EntityID;
+			r.AccountCode = 0;
+			r.GL_AccountID = selAcctID;
+			r.GL_Account = selAccount.@Label;
+			r.GL_AccountTypeID = selAccount.@GL_AccountTypeID;
+			r.GL_ParentAccount = ""
+			r.bitIsCleared = false;
+			r.bitIsProforma = false;
+//			r.IsSplit = "Y";					// Was N, Always a Split Item
+			r.fEdit = 0;						// flag as new (false)
+			r.Debit = Number("0.00");
+			r.Credit = Number("0.00");
+			r_Class = new RegisterDAO(r, dsn, endPoint);
+			
+			btnDeposit.enabled = false;
+			popDeposit = DepositTkt(PopUpManager.createPopUp(this, DepositTkt, true));
+			popDeposit.r_Class = r_Class;
+			popDeposit.fEdit = false;				// NOT edit -- new
+			popDeposit.accts = acctList;
+			popDeposit.dsn = dsn;
+			popDeposit.endPoint = endPoint;
+			popDeposit.duesAccount = duesAccount;	
+			//popDeposit.sEntity = findMember(r_Class.EntityID)	// Added v2.0+ Get Member Name or blank	
+			popDeposit.Today = Today;
+			popDeposit.membersList = _model.membersList.copy();
+		} 
+
+		// Select the item in the grid, enable DELETE
+		public function clkRegister(e:Event):void
+		{
+			_model.selectedRegister = e.currentTarget.selectedItem as RegisterDAO; //TW
+
+			//March 2012, TW:  I'm guessing that fEdit is set wrong when creating a split
+			if(_model.selectedRegister.fEdit==1) {
+				btnDeleteRI.enabled = true;
+			} else {
+				btnDeleteRI.enabled = false;
+			}
+		}
+
+		// here if item on register grid is double-clicked -- 
+		
+		public function dblClkRegSelect(e:Event):void {
+			var r_Class:RegisterDAO;
+			
+			if(e.currentTarget.selectedItem == null) {		// new RI
+				newRegisterEntry();
+			}
+			else {
+				r_Class = e.currentTarget.selectedItem as RegisterDAO;
+				if(r_Class.fEdit > 0)
+				{
+					if (r_Class.bitIsDeposit){			// Open Deposit ticket
+						popDeposit = DepositTkt(PopUpManager.createPopUp(this, DepositTkt, true));
+						popDeposit.r_Class = r_Class;
+						popDeposit.fEdit = true;				// NOT edit -- new
+						popDeposit.accts = acctList;
+						popDeposit.dsn = dsn;
+						popDeposit.endPoint = endPoint;
+						popDeposit.duesAccount = duesAccount;	
+						popDeposit.membersList = _model.membersList.copy();
+						//popDeposit.sEntity = findMember(r_Class.EntityID)	// Added v2.0+ Get Member Name or blank	
+					}
+					else if (r_Class.bitIsCheck){			// Open Check
+						popCheck = CheckEntry(PopUpManager.createPopUp(this, CheckEntry, true));
+						popCheck.r_Class = r_Class;
+						popCheck.fEdit = true;				// NOT edit -- new
+						popCheck.accts = acctList;
+						popCheck.dsn = dsn;
+						popCheck.endPoint = endPoint;
+						popCheck.duesAccount = duesAccount;	
+						popCheck.sEntity = findMember(r_Class.EntityID)	// Added v2.0+ Get Member Name or blank
+					}
+					else if (r_Class.bitIsSplit){			// Open Split
+						popSplit = popUpSplit(PopUpManager.createPopUp(this, popUpSplit, true));
+						popSplit.r_Class = e.currentTarget.selectedItem;
+						popSplit.fEdit = true;							// Edit
+						popSplit.accts = acctXML;
+						popSplit.dsn = dsn;
+						popSplit.endPoint = endPoint;
+						popSplit.isCash = isCash;						// Added v2.0+
+						popSplit.duesAccount = duesAccount;				// Added v2.0+
+						popSplit.sEntity = findMember(r_Class.EntityID)	// Added v2.0+ Get Member Name or blank	
+					} 
+					else {								// Not a Split -- probably an opening balance
+						Alert.show("This is not a split transaction that can be edited");
+					}
+				}
+				else {	// If this is a split entry -- the popup cannot be created to edit it
+					Alert.show("This entry is part of a split transaction." + 
+					"In order to change it, you must go to the source transaction in Account [" + r_Class.GL_ParentAccount + "]");
+				}
+			}
+		}
+
+		private function findMember(ID:int):String 
+		{
+			var i:int;
+			var len:int;
+			var tmp:Number;
+			var m:String = "";
+						
+			if (ID == 0)			// If not a Member
+				return m;
+				
+			for (i=0; i<_model.membersList.length; i++)
+				if (_model.membersList.getItemAt(i).UserID == ID)
+					return _model.membersList.getItemAt(i).UserName;
+			m = "Not Found";
+			return m;
+		
+		}
+		
+		// --- btnDeleteRI [DELETE] Button -- 		
+		private function delRegister():void
+		{
+			var args:Register;
+			//Alert.show("Will delete: "+_model.selectedRegisterLine);
+			//return; //TODO
+			//btnDeleteRI.enabled = false;
+			//No charges in any selections -- simply delete with no prompt
+			var popDeleteConfirm:popUpPost = popUpPost(PopUpManager.createPopUp(this, popUpPost, true));
+			popDeleteConfirm.title = "Please confirm delete";
+			popDeleteConfirm.postBack = doDeleteCallBack;
+			popDeleteConfirm.rollBack = null;
+			popDeleteConfirm.btnOK.label = "Yes";
+			popDeleteConfirm.btnCancel.label = "No";
+			
+			function doDeleteCallBack():void {
+				if(_model.selectedRegisterLine != null && !_model.selectedRegisterLineIsLocked)
+				{
+					args = _model.selectedRegisterLine.RmtRegister as Register; 
+					registerCFC.Delete(args);
+				}
+			}
+		
+		}
+		
+		// --- btnPrt [PRINT] Button -- 		
+		private function prtPopUp():void
+		{
+			if(selAcctID > 0)
+			{
+				popReg = popUpPrint(PopUpManager.createPopUp(this, popUpPrint, true));
+				popReg.callBack = prtRegister;
+			}
+		}
+		
+		public function prtRegister(from:String, to:String):void
+		{
+			var url:String = endPoint;
+			var idx:int;
+			var request:URLRequest;
+			var urlVars:URLVariables = new URLVariables();
+			
+			idx = url.lastIndexOf("/");
+			url = url.slice(0, idx+1);
+			url += dsn + "/ClubDues/PrintRegister.cfm";
+			request = new URLRequest(url);
+			request.method = "GET";
+			urlVars.GL_AccountID = selAcctID;
+			urlVars.EntityID = selEntity; 				// Selected EntityID
+			urlVars.ToDate = to;
+			urlVars.FromDate = from;
+			urlVars.IsProforma = chkBxProforma.selected ? "Y" : "N";
+			request.data = urlVars;
+			navigateToURL(request, '_blank');
+		}
+
+		public function prtDeposit(RegisterID: Number):void
+		{
+			var url:String = endPoint;
+			var idx:int;
+			var request:URLRequest;
+			var urlVars:URLVariables = new URLVariables();
+			
+			idx = url.lastIndexOf("/");
+			url = url.slice(0, idx+1);
+			url += dsn + "/ClubDues/PrintDeposit.cfm";
+			request = new URLRequest(url);
+			request.method = "GET";
+			urlVars.GL_AccountID = selAcctID;
+			urlVars.RegisterID = RegisterID;
+			request.data = urlVars;
+			navigateToURL(request, '_blank');
+		}
+/* -----------------------------------------------------------------------------------------
+	CFC Event Handlers
+------------------------------------------------------------------------------------------ */
+
+		//	accountCFCHandler - called to get accounts
+    	private function accountCFCHandler(e:ResultEvent):void
+		{
+			var _xml:XML;
+			var _r:XML; 
+			var args:Object={ClubID:clubID};
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		
+    		_r = e.result as XML;
+    		if(msgOp == "PickXML") 	{
+				acctXML = _r;
+				_model.accountsXML = acctXML;
+    		}
+    		if(msgOp == "PickXML2") {
+    			treeAccounts.dataProvider = _r;
+    		}
+    		if(msgOp == "Lookup") 	{
+    			acctLabel = e.result as ArrayCollection;
+    		}
+		}
+		
+		//	accountTypeCFCHandler - called to fill accountLabel array
+		private function accountTypeCFCHandler(e:ResultEvent):void
+		{
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		
+    		if(msgOp == "Lookup") {
+    			acctLabel = e.result as ArrayCollection
+    		}
+		}
+
+		//	registerCFCHandler - called to fill register
+		private function registerCFCHandler(e:ResultEvent):void
+		{
+			var r_Class:RegisterDAO;
+    		var r:Register;
+    		var delArgs:Object = {GL_AccountID:null, EntityID:null};
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		var ac:ArrayCollection;
+//    		var ar:Array;
+    		var registerID: Number;
+		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+  
+    		if(msgOp == "List" || msgOp == "ListF") {
+    			ac = e.result as ArrayCollection;		// get the returned results
+    			arRegister.removeAll();
+    			
+    			if(ac.length > 0)
+    			{
+    				_model.selectedAccountCode = ac.getItemAt(0).AccountCode;
+    			}
+    			for(var i:int=0; i<ac.length; i++)		// Push all register rows on to the grid
+    			{
+    				r_Class = new RegisterDAO(ac.getItemAt(i), dsn, endPoint); //TW: don't pass dsn, endPoint here
+    				arRegister.addItem(r_Class);
+    			}
+    			newBalance(e);			// Update the Register Balance
+    		}
+    		
+    		if(msgOp == "Delete") {
+    			delArgs.GL_AccountID = int(selAccount.@ID);
+    			delArgs.EntityID = int(selAccount.@EntityID);
+    			registerCFC.List(delArgs);		// Refresh
+    		}
+    		if(msgOp == "SaveQ2") {
+//Alert.show("SaveQ2=" +  e.result);   			
+    			if (printReceipt) {				// If this was a DepositTkt save, print the receipt,
+    				registerID = Number(e.result); 
+//Alert.show("SaveQ2=" +  registerID);   			
+    				prtDeposit(registerID);		// e.result is RegisterID of saved item (created or updated)
+    			}
+    		}
+		}
+
+		//	memberCFCHandler - called to fill Member arraycollection
+		private function memberCFCHandler(e:ResultEvent):void
+		{
+			var rmtMsg:RemotingMessage;
+    		var msgOp:String;
+    		
+    		rmtMsg = e.token.message as RemotingMessage;
+    		msgOp = rmtMsg.operation;
+    		
+    		if(msgOp == "PickXMLMembers") {
+    			 xmlMembers = e.result as XML;
+//   			 trace(xmlMembers);
+    			 MemberCnt = xmlMembers.member.length();
+    			 //TW: put into model
+    			 _model.membersList = new XMLListCollection(new XMLList(xmlMembers.member));
+    			 
+    		}
+		}
+		
+
+		private function navigatePage(e:Event):void
+		{
+			listArgs.GL_AccountID = PageGLAccountID;
+			listArgs.EntityID = PageEntityID;
+			listArgs.IncProforma = chkBxProforma.selected ? "Y" : "N";
+			listArgs.NavPage = navPage;
+			listArgs.PageSize = pageSize;
+			registerCFC.ListF(listArgs);		//CALL ColdFusion CFC
+
+		}
+		
+		//TW: TODO move out to tree component
+		
+		[Bindable]
+            [Embed("../assets/images/status_online.png")]
+            private var iconMember:Class;
+ 
+            [Bindable]
+            [Embed("../assets/images/status_busy.png")]
+            private var iconMemberTerm:Class;
+            
+            [Bindable]
+            [Embed("../assets/images/group.png")]
+            private var iconMemberGroup:Class;
+ 
+            [Bindable]
+            [Embed("../assets/images/folder_table.png")]
+            private var iconAccountGroup:Class;
+            
+            [Bindable]
+            [Embed("../assets/images/table.png")]
+            private var iconAccount:Class;
+ 
+            private function tree_iconFunc(item:Object):Class {
+                var iconClass:Class;
+                var a:XML = XML(item);
+                if(a.@Label == "Member DUES Receivable") { //A Member or Member Group, then check if Term
+                	var memberName:String = a.@Entity;
+                	if(a.@EntityID == 0) {// A member group account
+                    	iconClass = iconMemberGroup;
+                 	} else if(memberName.indexOf("(Term)") > 0) { //Term'ed Member
+                 		iconClass = iconMemberTerm;
+                 	} else { // A regular member
+                 		iconClass = iconMember;
+                 	}
+                } else if(a.@IsPosting == "N") { //An account folder 
+                    iconClass = iconAccountGroup;
+                } else { //An account
+                	iconClass = iconAccount;
+                }
+                return iconClass;
+            }
+
+/* -----------------------------------------------------------------------------------------
+	Private Functions
+------------------------------------------------------------------------------------------ */
+		
+		private function CFCerror(e:FaultEvent):void
+		{
+			//Alert.show(e.fault.faultString, "Server Error");
+			Alert.show(e.toString(), "Please contact support if error persists:");	
+			trace("Server Error: "+e.message);
+		}
+
+//    <mx:Label x="500" y="460" text="Page:" width="41" height="18" textAlign="right"/>
+//    <mx:NumericStepper x="560" y="460" width="58" height="20" value="{navPage}" minimum="1" change="navigatePage(event)"  />
+
+// itemRenderer="AmtFormat" 		
+	]]>
+		
+	</mx:Script>
+
+
+</mx:Application>
+

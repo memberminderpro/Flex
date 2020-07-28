@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="568" height="368" title="Statistics" borderColor="#EAF497">
+<mx:Script>
+	<![CDATA[
+	import mx.managers.PopUpManager;
+	import mx.collections.ArrayCollection;
+    import mx.controls.Alert;
+    
+	[Bindable]
+	public var attdRecord:Object;
+	[Bindable]
+	public var mealRecord:Array;
+
+	public var meetingName:String = "";
+	private function popUpInit():void
+	{
+		PopUpManager.centerPopUp(this);
+		//messageText.invalidateProperties();
+		this.invalidateProperties();
+	}
+	private function removeDetail():void
+	{
+		PopUpManager.removePopUp(this);
+	}
+	private function close():void
+	{	
+		removeDetail();
+	}
+	
+		
+	]]>
+</mx:Script>
+	<mx:Canvas label="Statistics" width="546" height="329" borderStyle="none" borderColor="#0B2494" id="canvas1" y="-1">
+			<mx:Label x="10" y="12" text="Meeting:" fontWeight="bold"/>
+			<mx:Button x="208.5" y="297" label="Close" id="btnClose" enabled="true" click="close()" width="68"/>
+			<!--mx:RadioButton x="100" y="184" label="Default" groupName="rgCustom" id="rbDefault" click="setDirectory()" selected="{config.custom == 1}"/-->
+			<mx:Label x="25" y="86" id="cntMembers" text="{attdRecord.memAttd}" width="35"/>
+			<mx:Label x="25" y="112" id="cntClubGuests" text="{attdRecord.clubGuests}" width="35"/>
+			<mx:Label x="25" y="138" id="cntGuestOfMembers" text="{attdRecord.memGuests}" width="35"/>
+			<mx:Label x="25" y="164" id="cntGuestRotarians" text="{attdRecord.rotarGuests}" width="35"/>
+			<mx:Label x="25" y="204" id="cntTotalAttendees" text="{attdRecord.total}" width="35"/>
+			<mx:HRule x="25" y="190" width="203"/>
+			<mx:Label x="68" y="86" text="Members checked in" width="160"/>
+			<mx:Label x="68" y="112" text="Guests of Club" width="160"/>
+			<mx:Label x="68" y="138" text="Guests of Members" width="160"/>
+			<mx:Label x="68" y="164" text="Visiting Rotarians" width="160"/>
+			<mx:Label x="68" y="204" text="Total checked in" width="160"/>
+			<mx:DataGrid x="255" y="64" width="281" id="mealStatsGrid" dataProvider="{mealRecord}" height="206">
+					<mx:columns>
+							<mx:DataGridColumn headerText="Meal Types" dataField="MealCode" width="200"/>
+							<mx:DataGridColumn headerText="Totals" dataField="Total"/>
+					</mx:columns>
+			</mx:DataGrid>
+			<mx:Text x="67" y="12" text="" width="335" id="meetingLabel"/>
+			<mx:Label x="10" y="38" text="Note: Information valid only for members checked-in by: " width="335"/>
+			<mx:Text x="342" y="38" text="" width="194" id="curTime"/>
+		</mx:Canvas>
+</mx:TitleWindow>

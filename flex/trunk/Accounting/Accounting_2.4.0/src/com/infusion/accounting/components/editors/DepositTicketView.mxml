@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DepositTicketComponent xmlns="com.infusion.accounting.components.editors.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="250" height="100%" xmlns:local="*">
+	
+	<mx:ViewStack id="viewstack1" width="100%" height="100%">
+	<mx:Canvas id="member" width="100%" height="100%" toolTip="Member">
+  	<mx:icon>@Embed(source='../../../../../../assets/images/status_online.png')</mx:icon>
+  	<mx:ComboBox id="dd" dataProvider="{membersList}" 
+  		labelField="@name" selectedIndex="{selMemberIndex}" 
+  		toolTip="{dd.selectedItem}" change="onMemberSelection(event)"
+  		width="100%" height="100%"/>
+	</mx:Canvas>
+	<mx:HBox width="100%" height="100%" id="other" toolTip="Other Source">
+		<mx:icon>@Embed(source='../../../../../../assets/images/money.png')</mx:icon>
+		<mx:TextInput id="inputComment" text="{_registerItem.Description}" valueCommit="onCommentChange(event)" width="115" toolTip="Enter Memo/Notes for this entry"/>
+		<!--mx:Button click="selectAccount()" toolTip="Select account to credit"
+			 textAlign="left" fillAlphas="[1.0, 1.0]" fillColors="[#FCFBFA, #FBD47F]" width="32">
+        	<mx:icon>@Embed(source='../assets/images/folder_table.png')</mx:icon>
+    	</mx:Button-->
+    	<mx:PopUpButton id="popUpButtonErrors" icon="@Embed(source='../assets/images/folder_table.png')"
+					label="{_registerItem.GL_Account}" 
+					toolTip="Select account to credit"
+					openAlways="true" 
+					width="100" >
+					
+			<mx:popUp>
+				<local:popUpAccounts puAcct="{_model.accountsXML}" creationComplete="stillEditing=true;"
+					curAccount="{_registerItem.GL_Account}" close="transferAcctInfoBack(event)"
+					 />
+			</mx:popUp>
+		</mx:PopUpButton>
+    	<!--mx:Label text="{_registerItem.GL_Account}" width="100" color="#8B5F01"/-->
+
+	</mx:HBox>
+	
+	</mx:ViewStack>
+	<mx:ToggleButtonBar id="inputSelector" dataProvider="{viewstack1}" 
+		selectedIndex="{selInputType}"
+		width="50" height="100%">
+	</mx:ToggleButtonBar>
+  <mx:Script>
+   <![CDATA[
+   	import accounts.Register;
+   	import accounts.RegisterDAO;
+   	import accounts.RegisterItem;
+   	import mx.managers.PopUpManager;
+   	import mx.controls.Alert;
+
+   	[Bindable]
+   	public var selMemberIndex:int = 0;
+   	
+   	[Bindable]
+   	public var selInputType:int = 0; //0=member list, 1=other input
+   	
+   	public var stillEditing:Boolean = false;
+   	
+   	//private var _data:Object = null;
+    override public function set data(o:Object):void
+    {
+       //super.data = o; //This is a register item!
+       //_data = o;
+       trace(this+"--SetData0: "+o);
+       //Fix it temporarily because we don't have dFlag or RefNum on backend now
+//       if(_registerItem == null){
+       try {
+       	  _registerItem = RegisterItem.castToRegisterItem(o);
+       	  trace(this+"--SetData1: "+_registerItem);
+       } catch(e:Error) {
+          trace("Expected RegisterItem, got : "+o);
+          _registerItem = new RegisterItem();
+       }
+       
+       // go through membersList and see which one matches
+       if(_registerItem.EntityID == 0) {
+       	  //it's new, so don't bother looking further
+       	  selMemberIndex = 0;
+       } else {
+	       for (var i:int=0; i < membersList.length; i++) {
+	       		var m:XML = membersList.getItemAt(i) as XML;
+	       		if(m != null && m.@value == _registerItem.EntityID) {
+	       			selMemberIndex = i;
+	       			break;
+	       		}
+	       }
+	   }
+	   
+
+//       }
+       
+      //Member view or "other" view
+	  if(_registerItem.GL_AccountID == 0) {
+	  	selInputType = 0;
+	  } else {
+	  	selInputType = 1;
+	  }
+     }
+     /*
+     override public function get data():Object {
+     	trace(this+"GetData: "+_registerItem);
+     	return _registerItem;
+     }
+     */
+     
+     public function onMemberSelection(event:Event):void {
+     	
+     	var x:XML = event.currentTarget.selectedItem as XML;
+     	_registerItem.EntityID = x.@value;
+     	_registerItem.Description = x.@name;
+     	_entityID =  x.@value;
+     	trace(this+"-Selected Member: "+x.toXMLString());
+     }
+     
+     public function onCommentChange(event:Event):void {
+     	//TODO set text to member value as XML newValue=event.currentTarget.selectedItem as XML;
+     	_registerItem.Description = inputComment.text;
+     	trace(this+"-Entered Comment: "+_registerItem.Description);
+     }
+     
+     
+     /**
+     * Copied from CheckEntry.mxml
+     * TODO make more generic
+     * */
+ 	private function selectAccount():void
+	{
+		_registerItem.GL_Account = "-- Member Dues --";
+		_registerItem.GL_AccountID = 0;
+		
+		stillEditing = true;
+		var popAccts:popUpAccounts = popUpAccounts(PopUpManager.createPopUp(this, popUpAccounts, true));
+		popAccts.puAcct = _model.accountsXML;
+		popAccts.curAccount = _registerItem.GL_Account; //TODO how to tell which acct FROM?
+		popAccts.callBack = AcctData;
+			
+
+	}
+	
+	protected function transferAcctInfoBack(e:Event):void {
+		trace("WTF!! "+e);
+	}
+	 
+		// Local function to handle callback
+		public function AcctData(x:XML):void
+		{	
+			stillEditing = false;
+			_registerItem.GL_Account = x.@Label;
+			_registerItem.GL_AccountID = x.@ID;
+			_registerItem.GL_AccountTypeID = x.@GL_AccountTypeID;
+			trace("-Select Account: "+x.toXMLString());
+			trace("-Select Account: "+_registerItem);
+		}
+ 
+   ]]>
+ </mx:Script>
+ 
+
+	
+</DepositTicketComponent>

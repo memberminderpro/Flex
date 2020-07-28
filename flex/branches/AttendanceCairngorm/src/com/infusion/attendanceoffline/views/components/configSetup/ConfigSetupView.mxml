@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ConfigSetupComponent 
+	xmlns="com.infusion.attendanceoffline.views.components.configSetup.*" 
+	xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%">
+	<mx:Canvas label="Setup" width="546" height="295" borderStyle="none" borderColor="#0B2494" id="canvas1" y="-1">
+			<mx:TextInput x="100" y="12" id="urlText" maxChars="50" editable="true" 
+				width="245.5" text="" valueCommit="checkValue()" change="checkValue()"/>
+			<mx:Label x="10" y="12" text="URL"/>
+			<mx:Label x="10" y="42" text="Destination"/>
+			<mx:TextInput x="100" y="42" id="destination" maxChars="20" editable="true" 
+				width="160" text="" valueCommit="checkValue()" change="checkValue()"/>
+			<mx:Label x="10" y="92" text="User Name"/>
+			<mx:TextInput x="100" y="92" id="txName" editable="true" 
+				maxChars="50" width="245.5"  
+				valueCommit="checkValue()" change="checkValue()"/>
+			<mx:Label x="10" y="122" text="Password"/>
+			<mx:TextInput x="100" y="122" width="160" id="txPW" displayAsPassword="true" maxChars="20" text="" 
+				valueCommit="checkValue()" change="checkValue()"/>
+			<mx:TextInput editable="false" x="100" y="205" id="txPath" width="344"  text="{filePath}"/>
+			<mx:Label x="10" y="207" text="Data File @ " fontSize="10"/>
+			<!--mx:RadioButton x="100" y="184" label="Default" groupName="rgCustom" id="rbDefault" click="setDirectory()" selected="{config.custom == 1}"/-->
+			<mx:CheckBox x="100" y="174" label="Custom Location" id="rbCustom" click="locationType()"/>
+			<mx:Button x="452" y="203" label="Browse..." id="btnBrowse" click="browseForDir()"/>
+
+		</mx:Canvas>
+	<ConfigSetupButtonBarView/>
+</ConfigSetupComponent>

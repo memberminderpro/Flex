@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+    implements="mx.controls.listClasses.IDropInListItemRenderer,mx.managers.IFocusManagerComponent"
+    creationComplete="onCreateComplete()">
+ 
+        <mx:Script>
+                <![CDATA[
+                	import com.infusion.accounting.models.AppModelLocator;
+                	import mx.collections.XMLListCollection;
+                import mx.controls.listClasses.ListData;
+            import mx.controls.dataGridClasses.DataGridListData;
+            import mx.controls.listClasses.BaseListData;
+            import mx.controls.dataGridClasses.DataGridItemRenderer
+            import mx.events.FlexEvent;
+            
+            private var _selIndex:int = 0;
+            
+            private function onCreateComplete():void
+            {
+            	//_members = (new XMLListCollection(this.parentApplication.xmlMembers.member)).toArray();
+            	_members = _model.membersList;
+            }
+
+            [Bindable]
+            private var _members:XMLListCollection;
+            public static var _model:AppModelLocator = AppModelLocator.getInstance();
+            
+            
+ //
+            private var _listData:DataGridListData;
+            // Define a property for returning the new value to the cell.
+            [Bindable]
+            public var value:Object;
+ 
+            // Implement the drawFocus() method for the VBox.
+            override public function drawFocus(draw:Boolean):void {
+                cbo.setFocus();
+            }
+ 
+            override public function get data():Object {
+                return super.data;
+            }
+ 
+            override public function set data(value:Object):void {
+            	super.data = value;
+            	//Find the right index
+            	if(_members != null) {
+            	for(var i:int=0; i < _members.length; i++) {
+            		var id:int = value[_listData] as int;
+            		if(_members[i].@value == id) {
+            			_selIndex = i;
+            		}
+            	}
+            	}
+                //cbo.selectedItem=value[_listData.dataField];
+            }
+            public function get listData():BaseListData
+            {
+                return _listData;
+            }
+ 
+            public function set listData(value:BaseListData):void
+            {
+                _listData = DataGridListData(value);
+            }
+            
+            //below was cbo.value
+ 
+        ]]>
+    </mx:Script>
+    <mx:Binding destination="value" source="cbo.selectedItem.@value"/> 
+ 
+        <mx:ComboBox id="cbo" labelField="@name" selectedIndex="{_selIndex}" 
+        	rowCount="10"
+        	editable="false" width="100%" dataProvider="{_members}">
+        </mx:ComboBox>
+</mx:VBox>

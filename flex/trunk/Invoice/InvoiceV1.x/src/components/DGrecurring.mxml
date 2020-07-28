@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml">
+	<mx:DataGrid id="dgRecurring" editable="true" width="400" height="220" 
+		dataProvider="{this.parentApplication.acMemRecurring}" color="#000000">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Member" editable="false" dataField="UserName"/>
+			<mx:DataGridColumn headerText="Amount" width="90" textAlign="center"
+				dataField="strAmount"
+				itemRenderer="components.amtValid" editable="true"
+                editorDataField="returnTx"
+                rendererIsEditor="true"/>
+		</mx:columns>
+	</mx:DataGrid>
+</mx:Canvas>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+	<!-- 
+		DACDB offline Attendance
+		
+	-->
+<mx:WindowedApplication 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+		pageTitle="Offline Attendance" 
+		xmlns:view="com.infusion.attendanceoffline.views.*" 
+		xmlns:control="com.infusion.attendanceoffline.commands.*" 
+		xmlns:business="com.infusion.attendanceoffline.services.*"
+		width="400" height="300" 
+		creationComplete="onCreationComplete()"
+		>
+<mx:Script>
+	<![CDATA[
+		import mx.controls.Alert;
+		public function onCreationComplete():void {
+			Alert.show("Started App");
+		}
+		
+	]]>
+</mx:Script>
+	<business:Services id="services" />
+	<control:Controller id="controller" /> 
+		
+		<!-- Main view that contains the complete app -->
+	<view:MainPanel width="100%" height="100%"/>
+	
+</mx:WindowedApplication>

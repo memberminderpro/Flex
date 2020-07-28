@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:ComboBox xmlns:mx="http://www.adobe.com/2006/mxml"
+     labelField="@name"  dataProvider="{_members}" 
+     change="onSelectionChange(event)" initialize="init()" rowCount="5">
+
+    <mx:Script>
+        <![CDATA[
+        	import accounts.RegisterItem;
+        	import com.infusion.accounting.models.AppModelLocator;
+            import mx.events.ListEvent;
+            import mx.controls.dataGridClasses.DataGridListData;
+            import mx.collections.XMLListCollection;
+			import mx.controls.Alert;
+            
+            private var _ownerData:Object;//RegisterItem;
+            
+            override public function set data(value:Object):void
+            {
+                if(value){
+                    
+                    _ownerData = value;// as RegisterItem;
+                    
+                    var col:DataGridListData = DataGridListData(listData);
+//                    var item:XML = new XML("<member />");
+                    //TW no need.  Just make sure right thing is being selected
+//                    var cname:String = value[col.dataField];
+//                    var cvalue:String = value[col.dataField].@value;
+//                    
+//                    item.@name = cname;
+//                    item.@value = cvalue;
+                    //TODO need to search through members to match ID
+                    selectedItem = value[col.dataField];
+                }
+            }
+            
+            override public function get data():Object
+            {
+                return _ownerData;
+            }
+            
+            override public function setFocus():void
+            {
+                super.setFocus();
+                open();
+            }
+            
+            private function onSelectionChange(e:ListEvent):void
+            {
+                if(selectedItem && _ownerData){
+                    
+                    var col:DataGridListData = DataGridListData(listData);
+                    var cname:String = selectedItem.@name;
+                    var cvalue:String = selectedItem.@value;
+
+                    _ownerData[col.dataField] = cvalue;
+                    
+                    trace("Selected Member: "+selectedItem.toString());
+                    trace("now: "+_ownerData);
+                    //_ownerData[col.dataField].@value = cvalue;
+//                	Alert.show("selected:" + cvalue);
+                } else {
+                	trace("selectionChange bad: "+selectedItem+", "+_ownerData);
+                }
+            }
+            private function init():void
+            {
+            	//_members = (new XMLListCollection(this.parentApplication.xmlMembers.member)).toArray();
+            	_members = _model.membersList;
+            }
+
+            [Bindable]
+            private var _members:XMLListCollection;
+            public var _model:AppModelLocator = AppModelLocator.getInstance();
+            
+        ]]>
+    </mx:Script>    
+</mx:ComboBox>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" title="Confirm" fontSize="12" 
+	creationComplete="popUpInit()" close="removeDetail()" showCloseButton="true" horizontalAlign="center" verticalAlign="middle" 
+	borderAlpha="1" backgroundColor="#F65F5F" borderColor="#F81818" width="275" height="130" layout="absolute" color="#000000">
+	<mx:Script>
+	<![CDATA[
+	import mx.managers.PopUpManager;
+	import mx.collections.ArrayCollection;
+    import mx.controls.Alert;
+    
+    [Bindable]
+	public var postBack:Function;
+	public var rollBack:Function;
+	[Bindable] public var messageTextString:String = "Delete this item?";
+	private function popUpInit():void
+	{
+		PopUpManager.centerPopUp(this);
+		messageText.invalidateProperties();
+		this.invalidateProperties();
+	}
+	private function removeDetail():void
+	{
+		PopUpManager.removePopUp(this);
+	}
+	private function confirm():void
+	{	
+		postBack();
+		removeDetail();
+	}
+	private function cancel():void
+	{	
+		if(rollBack != null) {
+			rollBack();
+		}
+		removeDetail();
+	}
+	]]>
+	</mx:Script>	
+	<mx:Button x="61" y="50" label="OK" id="btnOK" click="confirm()"/>
+	<mx:Button x="125" y="50" label="Cancel" id="btnCancel" click="cancel()"/>
+	<mx:Text id="messageText" x="10" y="10" text="{messageTextString}"/>
+</mx:TitleWindow>

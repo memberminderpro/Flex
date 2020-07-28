@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox implements="mx.controls.listClasses.IDropInListItemRenderer" horizontalAlign="center" xmlns:mx="http://www.adobe.com/2006/mxml" >
+<mx:Script>
+<![CDATA[
+	import mx.controls.dataGridClasses.DataGridListData;
+	import mx.controls.listClasses.BaseListData;
+	import mx.controls.Image;
+
+	private var _data:Object;
+
+	// Internal variable for the property value.
+	private var _listData:BaseListData;
+
+	[Embed(source="assets/application_form_edit.png")]
+    [Bindable]
+    public var dirty:Class; 
+    [Embed(source="assets/table_refresh.png")]
+    [Bindable]
+    public var clean:Class;   
+    [Embed(source="assets/flag_red.gif")]
+    [Bindable]
+    public var closed:Class;      
+
+	// Make the listData property bindable.
+	[Bindable("dataChange")]
+
+	// Define the getter method.
+	public function get listData():BaseListData
+	{
+		return _listData;
+	}
+
+	// Define the setter method,
+	public function set listData(value:BaseListData):void
+	{
+		_listData = value;
+	}
+
+	override public function set data(value:Object):void {
+
+		_data = value;
+
+	var icon:Image = new Image();
+
+	if (_data[DataGridListData(listData).dataField] === 1)
+	{
+		icon.source = dirty;
+		this.toolTip = "Was Edited locally";
+	}
+	else if (_data[DataGridListData(listData).dataField] === 86)
+	{	
+		icon.source = closed;
+		this.toolTip = "Closed";
+	}
+	else if (_data[DataGridListData(listData).dataField] === 0)
+	{	
+		icon.source = clean;
+		this.toolTip = "Not Edited";
+	}
+
+	this.removeAllChildren();
+	this.addChild(icon);
+}
+
+	override public function get data( ):Object {
+	return _data;
+	}
+
+]]>
+
+</mx:Script>
+</mx:HBox>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MeetingPanelComponent xmlns:mx="http://www.adobe.com/2006/mxml" 
+	xmlns="com.infusion.attendanceoffline.views.components.meetings.*"  width="100%" height="100%">
+	
+	<mx:HBox id="meetingHeaderArea" width="100%" paddingLeft="10" paddingRight="10" paddingTop="10">
+		<mx:Button label="Select All" id="btnAll" click="localSelectAll()"/>
+		<mx:Button label="Clear All" id="btnClear" click="localClearAll()"/>
+		<mx:Button label="Add Guest" id="btnAddGuest" click="localAddGuest()">
+			<mx:icon>@Embed(source='assets/add.png')</mx:icon>
+		</mx:Button>
+		<mx:HBox id="meetingHeaderAttended" width="100%">
+			<mx:Text text="Attended: " id="attdLabel"/>
+			<mx:Text id="attd1" text="({twoDecimalFormat.format(selectedMeeting.attdPercent)} % )" width="82"/>
+			<mx:Text id="attd2" text="{selectedMeeting.attdCount}" width="30"/>
+			<mx:Text text="of" id="attdOf"/>
+			<mx:Text id="attd3" text="{selectedMeeting.attdTotal}" width="34" />
+		</mx:HBox>
+		
+		<mx:Label text="User ID: "/>
+		<mx:TextInput id="scan" maxChars="20" editable="true" creationComplete="initTab()" width="100"/>		
+	</mx:HBox>
+	<!--mx:Canvas label="Attendance" width="764" height="415" id="attendTab" borderStyle="none" borderColor="#0B2494" x="0" y="0"-->
+		<mx:DataGrid  id="dgMembers" dataProvider="{selectedMeeting.members}" itemEditEnd="editingComplete()" editable="true" paddingLeft="15" paddingRight="15" width="100%" height="100%">
+			<mx:columns>
+				<mx:DataGridColumn headerText="Attended" width="80" textAlign="center" dataField="boolAttended" rendererIsEditor="true"
+					editorDataField="selected">
+					<mx:itemRenderer>
+						<mx:Component>
+							<mx:CheckBox enabled="true" selected="{data.boolAttended}" change="data.boolAttended=selected" mouseOut="outerDocument.focusScan()"/>	
+						</mx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Member" width="160" dataField="UserName" itemRenderer="classes.NameLabelRenderer" editable="false"/>
+				<mx:DataGridColumn headerText="Type" width="140" dataField="MemberType" editable="false"/>
+				<mx:DataGridColumn headerText="Meal" width="160" dataField="MealCode" editorDataField="selectedMealCodeID"
+												itemRenderer="{mealCodeLabelRenderer}" rendererIsEditor="false">
+					<mx:itemEditor>  
+					<mx:Component>  
+					<mx:ComboBox dataProvider="{dataMealCodes}" labelField="MealCode" >
+					<mx:Script>
+      				<![CDATA[
+      				   
+        				public function get selectedMealCodeID():int {
+        					if(selectedItem == null) return 0;
+        		  			return selectedItem.MealCodeID;
+        				}
+      				]]>
+    				</mx:Script>
+					</mx:ComboBox>  
+					</mx:Component>  
+					</mx:itemEditor> 
+				</mx:DataGridColumn>
+				<mx:DataGridColumn id="colNote" headerText="Notes"
+					editable="true" 
+					width="160" dataField="Notes"/>
+					<!--mx:DataGridColumn id="colNote" headerText="Notes"
+					itemRenderer="classes.notesSz" editorDataField="returnTx" rendererIsEditor="true" 
+					width="160" dataField="Notes"/-->
+
+			</mx:columns>
+		</mx:DataGrid>
+	<!--/mx:Canvas-->
+
+</MeetingPanelComponent>

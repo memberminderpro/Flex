@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml"
+	horizontalScrollPolicy="off" horizontalAlign="left" verticalAlign="middle" horizontalGap="0">
+	<mx:Script>
+        <![CDATA[           
+            // Define a property for returning the new value to the cell.
+            [Bindable]
+            public var returnTx:String;
+            public var text:String = "text";
+            private function newValue(e:Event):void
+            {
+            	data.Notes = notesTx.text;
+            	data.enterEvent();
+            }
+            private function enterKey(e:KeyboardEvent):void
+            {
+            	if(e.keyCode == Keyboard.ENTER)
+            	{
+            		data.enterEvent();
+            	}
+            }
+        ]]>
+    </mx:Script>
+    <mx:TextInput id="notesTx"  
+        text="{data.Notes}"
+        editable="true"
+        maxChars="32"
+        keyUp="enterKey(event)"
+        valueCommit="newValue(event)" width="150"/> 
+</mx:VBox>
